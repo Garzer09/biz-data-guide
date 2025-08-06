@@ -14,7 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          accounting_plan: string | null
+          coverage: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          last_load: string | null
+          name: string
+          sector: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          accounting_plan?: string | null
+          coverage?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          last_load?: string | null
+          name: string
+          sector?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accounting_plan?: string | null
+          coverage?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          last_load?: string | null
+          name?: string
+          sector?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_companies: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
