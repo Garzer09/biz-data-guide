@@ -101,7 +101,7 @@ export function CompaniesManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <DashboardHeader 
-          title="Gestión de Empresas"
+          title="Panel de administrador"
           subtitle="Administra empresas y carga datos financieros mediante plantillas CSV"
         />
         
@@ -208,13 +208,15 @@ export function CompaniesManagement() {
 
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">📊 Cobertura de Datos</span>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Cobertura de Datos</span>
               </div>
               <p className="text-sm text-muted-foreground">{company.coverage}</p>
               
               {company.lastLoad && (
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">📅 Última Carga</span>
+                  <History className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Última Carga</span>
                   <span className={company.status === "FAILED" ? "text-destructive" : "text-success"}>
                     {company.status === "FAILED" ? "FAILED" : "OK"} {company.lastLoad}
                   </span>

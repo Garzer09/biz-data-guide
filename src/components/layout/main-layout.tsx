@@ -4,13 +4,13 @@ import { MainDashboard } from "@/components/dashboard/main-dashboard";
 import { CompaniesManagement } from "@/components/companies/companies-management";
 
 export function MainLayout() {
-  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [currentPage, setCurrentPage] = useState("admin-panel");
 
   const renderContent = () => {
     switch (currentPage) {
       case "dashboard":
         return <MainDashboard />;
-      case "companies":
+      case "admin-panel":
         return <CompaniesManagement />;
       default:
         return (

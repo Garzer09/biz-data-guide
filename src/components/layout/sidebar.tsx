@@ -24,15 +24,15 @@ interface SidebarProps {
 
 const menuItems = [
   {
+    id: "admin-panel",
+    label: "Panel de administrador",
+    icon: Settings
+  },
+  {
     id: "dashboard",
     label: "Dashboard Principal",
     icon: BarChart3,
     active: true
-  },
-  {
-    id: "companies",
-    label: "Gestión de Empresas", 
-    icon: Building2
   },
   {
     id: "company-description",
@@ -54,11 +54,6 @@ const menuItems = [
       { id: "current-analytics", label: "P&G Analítico Actual", icon: BarChart3 },
       { id: "segment-sales", label: "Ventas por Segmentos", icon: PieChart }
     ]
-  },
-  {
-    id: "settings",
-    label: "Configuración",
-    icon: Settings
   }
 ];
 
