@@ -3,13 +3,14 @@ import { useAuth } from './hooks/use-auth';
 import { Auth } from './pages/Auth';
 import { AppLayout } from './components/layout/app-layout';
 import { AdminPage } from './pages/AdminPage';
+import { CompanySelector } from './pages/CompanySelector';
 import { CompanyDashboard } from './pages/company/CompanyDashboard';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -32,6 +33,12 @@ function App() {
       {/* Protected routes */}
       {user ? (
         <>
+          {/* Company selector for normal users */}
+          <Route 
+            path="/home" 
+            element={<CompanySelector />} 
+          />
+          
           {/* Admin panel */}
           <Route 
             path="/admin" 
@@ -61,10 +68,15 @@ function App() {
             } 
           />
           
-          {/* Root redirect */}
+          {/* Root redirect based on user role */}
           <Route 
             path="/" 
-            element={<Navigate to="/admin" replace />} 
+            element={
+              <Navigate 
+                to={isAdmin ? "/admin" : "/home"} 
+                replace 
+              />
+            } 
           />
         </>
       ) : (
