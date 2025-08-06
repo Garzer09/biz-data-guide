@@ -1,7 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/use-auth';
 import { Auth } from './pages/Auth';
-import { MainLayout } from './components/layout/main-layout';
+import { AppLayout } from './components/layout/app-layout';
+import { AdminPage } from './pages/AdminPage';
+import { CompanyDashboard } from './pages/company/CompanyDashboard';
+import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
 
@@ -25,10 +28,49 @@ function App() {
         path="/auth" 
         element={user ? <Navigate to="/" replace /> : <Auth />} 
       />
-      <Route 
-        path="/" 
-        element={user ? <MainLayout /> : <Navigate to="/auth" replace />} 
-      />
+      
+      {/* Protected routes */}
+      {user ? (
+        <>
+          {/* Admin panel */}
+          <Route 
+            path="/admin" 
+            element={
+              <AppLayout>
+                <AdminPage />
+              </AppLayout>
+            } 
+          />
+          
+          {/* Company-specific routes */}
+          <Route 
+            path="/c/:companyId/dashboard" 
+            element={
+              <AppLayout>
+                <CompanyDashboard />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/:page" 
+            element={
+              <AppLayout>
+                <CompanyPage />
+              </AppLayout>
+            } 
+          />
+          
+          {/* Root redirect */}
+          <Route 
+            path="/" 
+            element={<Navigate to="/admin" replace />} 
+          />
+        </>
+      ) : (
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      )}
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
