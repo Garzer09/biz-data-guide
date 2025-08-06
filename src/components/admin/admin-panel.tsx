@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, Settings, Upload } from "lucide-react";
 import { CompaniesManagement } from "./companies-management";
-import { UserCompanyAssignments } from "./user-company-assignments";
+import { UsersManagement } from "./users-management";
 import { CompanyPagesManagement } from "./company-pages-management";
 import { ImportDataManagement } from "./import-data-management";
 
@@ -23,9 +23,9 @@ export function AdminPanel() {
             <Building2 className="h-4 w-4" />
             Empresas
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex items-center gap-2">
+          <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Asignaciones
+            Usuarios
           </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -51,16 +51,16 @@ export function AdminPanel() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="assignments">
+        <TabsContent value="users">
           <Card>
             <CardHeader>
-              <CardTitle>Asignación de Usuarios a Empresas</CardTitle>
+              <CardTitle>Gestión de Usuarios</CardTitle>
               <CardDescription>
-                Gestiona qué usuarios tienen acceso a qué empresas
+                Gestiona usuarios, permisos de administrador y asignaciones a empresas
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <UserCompanyAssignments />
+              <UsersManagement />
             </CardContent>
           </Card>
         </TabsContent>
