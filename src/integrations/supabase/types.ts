@@ -14,12 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          accion: string
+          actor_user_id: string
+          creado_en: string
+          entidad: string
+          entidad_id: string | null
+          id: string
+        }
+        Insert: {
+          accion: string
+          actor_user_id: string
+          creado_en?: string
+          entidad: string
+          entidad_id?: string | null
+          id?: string
+        }
+        Update: {
+          accion?: string
+          actor_user_id?: string
+          creado_en?: string
+          entidad?: string
+          entidad_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           accounting_plan: string | null
+          cif_nif: string | null
           coverage: string | null
+          creado_en: string | null
           created_at: string
           currency: string | null
+          estado: string | null
           id: string
           last_load: string | null
           name: string
@@ -29,9 +59,12 @@ export type Database = {
         }
         Insert: {
           accounting_plan?: string | null
+          cif_nif?: string | null
           coverage?: string | null
+          creado_en?: string | null
           created_at?: string
           currency?: string | null
+          estado?: string | null
           id?: string
           last_load?: string | null
           name: string
@@ -41,9 +74,12 @@ export type Database = {
         }
         Update: {
           accounting_plan?: string | null
+          cif_nif?: string | null
           coverage?: string | null
+          creado_en?: string | null
           created_at?: string
           currency?: string | null
+          estado?: string | null
           id?: string
           last_load?: string | null
           name?: string
@@ -53,6 +89,269 @@ export type Database = {
         }
         Relationships: []
       }
+      company_pages: {
+        Row: {
+          company_id: string
+          created_at: string
+          enabled_pages: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          enabled_pages?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          enabled_pages?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_pages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fs_balance: {
+        Row: {
+          company_id: string
+          concepto: string
+          created_at: string
+          id: string
+          period_id: string
+          valor: number | null
+        }
+        Insert: {
+          company_id: string
+          concepto: string
+          created_at?: string
+          id?: string
+          period_id: string
+          valor?: number | null
+        }
+        Update: {
+          company_id?: string
+          concepto?: string
+          created_at?: string
+          id?: string
+          period_id?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_balance_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_balance_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fs_cashflow: {
+        Row: {
+          company_id: string
+          concepto: string
+          created_at: string
+          id: string
+          period_id: string
+          valor: number | null
+        }
+        Insert: {
+          company_id: string
+          concepto: string
+          created_at?: string
+          id?: string
+          period_id: string
+          valor?: number | null
+        }
+        Update: {
+          company_id?: string
+          concepto?: string
+          created_at?: string
+          id?: string
+          period_id?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_cashflow_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_cashflow_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fs_income: {
+        Row: {
+          company_id: string
+          concepto: string
+          created_at: string
+          id: string
+          period_id: string
+          valor: number | null
+        }
+        Insert: {
+          company_id: string
+          concepto: string
+          created_at?: string
+          id?: string
+          period_id: string
+          valor?: number | null
+        }
+        Update: {
+          company_id?: string
+          concepto?: string
+          created_at?: string
+          id?: string
+          period_id?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_income_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_income_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_files: {
+        Row: {
+          created_at: string
+          hash: string | null
+          id: string
+          job_id: string
+          storage_path: string
+          subido_por: string | null
+        }
+        Insert: {
+          created_at?: string
+          hash?: string | null
+          id?: string
+          job_id: string
+          storage_path: string
+          subido_por?: string | null
+        }
+        Update: {
+          created_at?: string
+          hash?: string | null
+          id?: string
+          job_id?: string
+          storage_path?: string
+          subido_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_files_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_jobs: {
+        Row: {
+          company_id: string
+          creado_en: string
+          error_rows: number | null
+          estado: string
+          id: string
+          ok_rows: number | null
+          tipo: string
+          total_rows: number | null
+        }
+        Insert: {
+          company_id: string
+          creado_en?: string
+          error_rows?: number | null
+          estado?: string
+          id?: string
+          ok_rows?: number | null
+          tipo: string
+          total_rows?: number | null
+        }
+        Update: {
+          company_id?: string
+          creado_en?: string
+          error_rows?: number | null
+          estado?: string
+          id?: string
+          ok_rows?: number | null
+          tipo?: string
+          total_rows?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      periods: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          periodo: string
+          tipo: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          periodo: string
+          tipo: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          periodo?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periods_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -60,6 +359,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          nombre: string | null
           role: string | null
           updated_at: string
           user_id: string
@@ -70,6 +370,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          nombre?: string | null
           role?: string | null
           updated_at?: string
           user_id: string
@@ -80,11 +381,54 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          nombre?: string | null
           role?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      ratios_calc: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          period_id: string
+          ratio: string
+          valor: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          period_id: string
+          ratio: string
+          valor?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          period_id?: string
+          ratio?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratios_calc_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratios_calc_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "periods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_companies: {
         Row: {
@@ -120,7 +464,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
