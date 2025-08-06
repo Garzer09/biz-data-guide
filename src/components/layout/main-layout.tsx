@@ -22,9 +22,9 @@ export function MainLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen w-screen bg-background">
       <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-auto">
         {renderContent()}
       </main>
     </div>
