@@ -24,7 +24,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="flex items-center gap-4">
               <h1 className="text-lg font-semibold">FinSight Pro</h1>
             </div>
-            <CompanySelector />
+            {/* Only show company selector on company routes, not admin */}
+            {companyId && (
+              <CompanySelector />
+            )}
           </div>
         </header>
 

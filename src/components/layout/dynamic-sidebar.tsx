@@ -63,10 +63,14 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
   const currentPage = location.pathname.split('/').pop() || 'dashboard';
 
   useEffect(() => {
-    if (companyId) {
+    // Only fetch company pages if we're on a company route (not admin)
+    if (companyId && !location.pathname.startsWith('/admin')) {
       fetchEnabledPages();
+    } else {
+      setEnabledPages(['dashboard']); // Default for non-company routes
+      setLoading(false);
     }
-  }, [companyId]);
+  }, [companyId, location.pathname]);
 
   const fetchEnabledPages = async () => {
     if (!companyId) return;

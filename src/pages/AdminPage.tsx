@@ -1,5 +1,4 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Navigate } from "react-router-dom";
 import { AdminPanel } from "@/components/admin/admin-panel";
 
 export function AdminPage() {
@@ -17,7 +16,14 @@ export function AdminPage() {
   }
 
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Acceso Denegado</h2>
+          <p className="text-muted-foreground">No tienes permisos para acceder al panel de administrador</p>
+        </div>
+      </div>
+    );
   }
 
   return <AdminPanel />;
