@@ -1,5 +1,6 @@
 import { MetricCard } from "@/components/ui/metric-card";
 import { DashboardHeader } from "./dashboard-header";
+import { AIDiagnosis } from "./ai-diagnosis";
 
 export function MainDashboard() {
   const currentYearMetrics = [
@@ -120,22 +121,8 @@ export function MainDashboard() {
         </div>
       </section>
 
-      {/* Projected Year Indicators */}
-      <section>
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Indicadores Clave de Rendimiento - Año 1 (Proyectado)
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {projectedMetrics.map((metric, index) => (
-            <MetricCard key={index} {...metric} />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {projectedSecondRow.map((metric, index) => (
-            <MetricCard key={index} {...metric} />
-          ))}
-        </div>
-      </section>
+      {/* AI Diagnosis */}
+      <AIDiagnosis metrics={[...currentYearMetrics, ...secondRowMetrics]} />
     </div>
   );
 }

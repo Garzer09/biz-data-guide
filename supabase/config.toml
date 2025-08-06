@@ -1,1 +1,4 @@
 project_id = "oeyklikylaitlgwltvup"
+
+[functions.generate-diagnosis]
+verify_jwt = false
