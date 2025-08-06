@@ -162,7 +162,7 @@ export function ImportDataManagement() {
       case 'PROCESSING':
         return <Badge variant="outline" className="text-blue-600">Procesando</Badge>;
       case 'COMPLETED':
-        return <Badge variant="default" className="text-green-600">Completado</Badge>;
+        return <Badge className="bg-green-600 text-white hover:bg-green-700">Completado</Badge>;
       case 'ERROR':
         return <Badge variant="destructive">Error</Badge>;
       default:
