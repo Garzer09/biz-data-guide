@@ -10,9 +10,9 @@ import NotFound from './pages/NotFound';
 import './App.css';
 
 function App() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, userProfile } = useAuth();
 
-  if (loading) {
+  if (loading || (user && !userProfile)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
