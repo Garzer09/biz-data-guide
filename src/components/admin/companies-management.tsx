@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Building2, Plus, Edit, Trash2, Eye, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Company {
@@ -32,6 +33,7 @@ export function CompaniesManagement() {
   });
   const { isAdmin } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isAdmin) {
@@ -134,6 +136,10 @@ export function CompaniesManagement() {
     setIsEditModalOpen(true);
   };
 
+  const handleAccessDashboard = (companyId: string) => {
+    navigate(`/c/${companyId}/dashboard`);
+  };
+
   if (!isAdmin) {
     return (
       <div className="text-center text-muted-foreground">
@@ -223,6 +229,15 @@ export function CompaniesManagement() {
                 <Badge variant={company.estado === 'ACTIVO' ? 'default' : 'secondary'}>
                   {company.estado}
                 </Badge>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleAccessDashboard(company.id)}
+                  className="flex items-center gap-1"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Dashboard
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
