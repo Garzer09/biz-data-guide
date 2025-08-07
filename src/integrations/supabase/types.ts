@@ -966,6 +966,68 @@ export type Database = {
         }
         Relationships: []
       }
+      pyg_analytic: {
+        Row: {
+          centro_coste: string | null
+          company_id: string
+          concepto_codigo: string
+          creado_en: string | null
+          id: string
+          periodo: string
+          segmento: string | null
+          valor: number
+        }
+        Insert: {
+          centro_coste?: string | null
+          company_id: string
+          concepto_codigo: string
+          creado_en?: string | null
+          id?: string
+          periodo: string
+          segmento?: string | null
+          valor: number
+        }
+        Update: {
+          centro_coste?: string | null
+          company_id?: string
+          concepto_codigo?: string
+          creado_en?: string | null
+          id?: string
+          periodo?: string
+          segmento?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_concepto_codigo_fkey"
+            columns: ["concepto_codigo"]
+            isOneToOne: false
+            referencedRelation: "catalog_pyg_concepts"
+            referencedColumns: ["concepto_codigo"]
+          },
+        ]
+      }
       pyg_annual: {
         Row: {
           anio: string
@@ -1537,6 +1599,124 @@ export type Database = {
           },
         ]
       }
+      vw_pyg_analytic_detail: {
+        Row: {
+          centro_coste: string | null
+          company_id: string | null
+          concepto_codigo: string | null
+          concepto_nombre: string | null
+          creado_en: string | null
+          grupo: string | null
+          id: string | null
+          periodo: string | null
+          segmento: string | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_concepto_codigo_fkey"
+            columns: ["concepto_codigo"]
+            isOneToOne: false
+            referencedRelation: "catalog_pyg_concepts"
+            referencedColumns: ["concepto_codigo"]
+          },
+        ]
+      }
+      vw_pyg_analytic_segmento: {
+        Row: {
+          company_id: string | null
+          concepto_nombre: string | null
+          grupo: string | null
+          periodo: string | null
+          segmento: string | null
+          total_valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      vw_pyg_analytic_summary: {
+        Row: {
+          company_id: string | null
+          concepto_codigo: string | null
+          concepto_nombre: string | null
+          grupo: string | null
+          num_registros: number | null
+          periodo: string | null
+          total_valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_concepto_codigo_fkey"
+            columns: ["concepto_codigo"]
+            isOneToOne: false
+            referencedRelation: "catalog_pyg_concepts"
+            referencedColumns: ["concepto_codigo"]
+          },
+        ]
+      }
       vw_pyg_anual: {
         Row: {
           amort: number | null
@@ -1577,6 +1757,40 @@ export type Database = {
           },
           {
             foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      vw_pyg_contribucion_centrocoste: {
+        Row: {
+          centro_coste: string | null
+          company_id: string | null
+          coste_ventas: number | null
+          ingresos: number | null
+          margen_bruto: number | null
+          margen_contribucion_pct: number | null
+          periodo: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "company_access"
@@ -1770,6 +1984,12 @@ export type Database = {
           anio: string
         }[]
       }
+      get_centros_coste: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          centro_coste: string
+        }[]
+      }
       get_cobertura_intereses: {
         Args: { _company_id: string; _anio: string }
         Returns: number
@@ -1870,6 +2090,12 @@ export type Database = {
         Args: { _company_id: string; _anio: string }
         Returns: number
       }
+      get_pyg_analytic_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
       get_ratio_endeudamiento: {
         Args: { _company_id: string; _anio: string }
         Returns: number
@@ -1913,6 +2139,12 @@ export type Database = {
       get_rotacion_activos: {
         Args: { _company_id: string; _anio: string }
         Returns: number
+      }
+      get_segmentos: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          segmento: string
+        }[]
       }
       get_total_debt: {
         Args: { _company_id: string; _escenario: string }
