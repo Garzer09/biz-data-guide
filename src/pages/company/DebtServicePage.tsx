@@ -302,21 +302,25 @@ export default function DebtServicePage() {
       </Card>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-6">
         {/* Service vs Flow Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Servicio vs Flujo Operativo</CardTitle>
+            <CardTitle>Servicio de Deuda vs Flujo Disponible</CardTitle>
             <CardDescription>Comparación mensual del servicio de deuda y flujo disponible</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={400}>
               <ComposedChart data={stressedData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="periodo" 
                   tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => value.split('-')[1]}
+                  tickFormatter={(value) => {
+                    const month = value.split('-')[1];
+                    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    return months[parseInt(month) - 1] || month;
+                  }}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip 
@@ -324,27 +328,37 @@ export default function DebtServicePage() {
                   labelFormatter={(label) => `Período: ${label}`}
                 />
                 <Legend />
+                
+                {/* Area shading where servicio_total > flujo_operativo */}
+                <defs>
+                  <pattern id="riskPattern" patternUnits="userSpaceOnUse" width="4" height="4">
+                    <rect width="4" height="4" fill="hsl(var(--destructive))" fillOpacity="0.1"/>
+                  </pattern>
+                </defs>
+                
                 <Area
-                  dataKey="servicio_total"
-                  fill="#ef4444"
-                  fillOpacity={0.1}
+                  dataKey={(data) => data.servicio_total > data.flujo_operativo ? data.servicio_total : null}
+                  fill="hsl(var(--destructive))"
+                  fillOpacity={0.2}
                   stroke="none"
+                  connectNulls={false}
                 />
+                
                 <Line
                   type="monotone"
                   dataKey="servicio_total"
-                  stroke="#ef4444"
+                  stroke="hsl(var(--destructive))"
                   strokeWidth={2}
                   dot={{ r: 4 }}
-                  name="Servicio Total"
+                  name="Servicio de Deuda"
                 />
                 <Line
                   type="monotone"
                   dataKey="flujo_operativo"
-                  stroke="#22c55e"
+                  stroke="hsl(var(--success))"
                   strokeWidth={2}
                   dot={{ r: 4 }}
-                  name="Flujo Operativo"
+                  name="Flujo Disponible"
                 />
               </ComposedChart>
             </ResponsiveContainer>
@@ -358,37 +372,62 @@ export default function DebtServicePage() {
             <CardDescription>Ratio de cobertura del servicio de deuda por mes</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stressedData}>
+            <ResponsiveContainer width="100%" height={400}>
+              <ComposedChart data={stressedData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="periodo" 
                   tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => value.split('-')[1]}
+                  tickFormatter={(value) => {
+                    const month = value.split('-')[1];
+                    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    return months[parseInt(month) - 1] || month;
+                  }}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip 
-                  formatter={(value) => [formatDSCR(Number(value)), 'DSCR']}
+                  formatter={(value) => [formatDSCR(Number(value)) + '×', 'DSCR']}
                   labelFormatter={(label) => `Período: ${label}`}
                 />
+                <Legend 
+                  content={() => (
+                    <div className="flex justify-center gap-6 mt-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded"></div>
+                        <span>Seguro (≥1.2)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                        <span>Precaución (1.0-1.2)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded"></div>
+                        <span>Riesgo (&lt;1.0)</span>
+                      </div>
+                    </div>
+                  )}
+                />
+                
                 <Bar
                   dataKey="dscr"
-                  fill="#3b82f6"
                   name="DSCR"
                 >
                   {stressedData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={getDSCRColor(entry.dscr)} />
                   ))}
                 </Bar>
+                
                 {/* Reference line at 1.2 */}
                 <Line
                   type="monotone"
                   dataKey={() => 1.2}
-                  stroke="#6b7280"
+                  stroke="hsl(var(--muted-foreground))"
                   strokeDasharray="5 5"
+                  strokeWidth={2}
                   dot={false}
+                  name="Umbral Recomendado (1.2)"
                 />
-              </BarChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
