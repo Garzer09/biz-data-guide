@@ -2,3 +2,6 @@ project_id = "oeyklikylaitlgwltvup"
 
 [functions.generate-diagnosis]
 verify_jwt = false
+
+[functions.validate-pyg-data]
+verify_jwt = true
