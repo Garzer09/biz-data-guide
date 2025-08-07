@@ -1228,6 +1228,42 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_companies: {
         Row: {
           company_id: string
@@ -2331,6 +2367,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      log_security_event: {
+        Args: {
+          _action: string
+          _resource_type: string
+          _resource_id?: string
+          _details?: Json
+        }
+        Returns: undefined
+      }
       upsert_company_profile: {
         Args:
           | {
@@ -2358,6 +2403,14 @@ export type Database = {
               _organigrama: string
             }
         Returns: undefined
+      }
+      validate_file_upload: {
+        Args: {
+          _file_size: number
+          _content_type: string
+          _max_size_mb?: number
+        }
+        Returns: boolean
       }
     }
     Enums: {
