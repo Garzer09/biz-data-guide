@@ -144,21 +144,37 @@ Deno.serve(async (req) => {
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
     console.log('CSV headers:', headers)
     
-    const rows: RatiosRow[] = lines.slice(1).map(line => {
+    // Transform data from wide format (multiple ratio columns) to long format (single ratio_name column)
+    const transformedRows: RatiosRow[] = []
+    
+    lines.slice(1).forEach((line, lineIndex) => {
       const values = line.split(',').map(v => v.trim().replace(/"/g, ''))
-      const row: RatiosRow = {}
+      const rowData: any = {}
+      
+      // Parse all values first
       headers.forEach((header, index) => {
-        const value = values[index] || ''
-        if (header === 'ratio_value' || header === 'benchmark') {
-          row[header] = value ? Number(value) : null
-        } else {
-          row[header] = value
+        rowData[header] = values[index] || ''
+      })
+      
+      // Transform each ratio column into separate rows
+      headers.forEach(header => {
+        if (header !== 'company_code' && header !== 'periodo' && header !== 'anio') {
+          const value = rowData[header]
+          if (value && value !== '') {
+            transformedRows.push({
+              company_code: rowData.company_code,
+              anio: rowData.anio || rowData.periodo?.substring(0, 4) || '2024',
+              periodo: rowData.periodo || 'Q4',
+              ratio_name: header,
+              ratio_value: isNaN(Number(value)) ? null : Number(value),
+              benchmark: null
+            })
+          }
         }
       })
-      return row
     })
 
-    console.log(`Processing ${rows.length} rows`)
+    console.log(`Processing ${transformedRows.length} rows`)
 
     // Get company mapping
     const { data: companies, error: companyError } = await supabase
@@ -188,7 +204,7 @@ Deno.serve(async (req) => {
     let errorRows = 0
     const errors: string[] = []
 
-    for (const [index, row] of rows.entries()) {
+    for (const [index, row] of transformedRows.entries()) {
       try {
         // Validate required fields
         if (!row.ratio_name) {
@@ -256,11 +272,11 @@ Deno.serve(async (req) => {
         estado: status,
         ok_rows: okRows,
         error_rows: errorRows,
-        total_rows: rows.length,
+        total_rows: transformedRows.length,
         resumen: {
           ok_rows: okRows,
           error_rows: errorRows,
-          total_rows: rows.length,
+          total_rows: transformedRows.length,
           errors: errors.slice(0, 10), // Limit errors shown
           sample_errors: errors.slice(0, 5)
         }
@@ -272,7 +288,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Processed ${rows.length} rows`,
+        message: `Processed ${transformedRows.length} rows`,
         ok_rows: okRows,
         error_rows: errorRows,
         errors: errors.slice(0, 10)
