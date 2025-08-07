@@ -57,16 +57,19 @@ serve(async (req) => {
       throw new Error('Authentication failed');
     }
 
-    // Check if user is admin
-    const { data: isAdmin, error: adminError } = await supabase
-      .rpc('is_current_user_admin');
+    // Check if user is admin by checking their profile role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
 
-    if (adminError) {
-      console.error('Error checking admin status:', adminError);
-      throw new Error('Failed to verify admin permissions');
+    if (profileError) {
+      console.error('Error checking user profile:', profileError);
+      throw new Error('Failed to verify user profile');
     }
 
-    if (!isAdmin) {
+    if (profile?.role !== 'admin') {
       throw new Error('Admin permissions required');
     }
 
