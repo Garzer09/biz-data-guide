@@ -111,6 +111,153 @@ export type Database = {
         }
         Relationships: []
       }
+      cashflows_financiacion: {
+        Row: {
+          anio: string
+          company_id: string
+          creado_en: string
+          flujo_financiacion: number
+          id: string
+          periodo: string
+        }
+        Insert: {
+          anio: string
+          company_id: string
+          creado_en?: string
+          flujo_financiacion: number
+          id?: string
+          periodo: string
+        }
+        Update: {
+          anio?: string
+          company_id?: string
+          creado_en?: string
+          flujo_financiacion?: number
+          id?: string
+          periodo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashflows_financiacion_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashflows_financiacion_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "cashflows_financiacion_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      cashflows_inversion: {
+        Row: {
+          anio: string
+          company_id: string
+          creado_en: string
+          flujo_inversion: number
+          id: string
+          periodo: string
+        }
+        Insert: {
+          anio: string
+          company_id: string
+          creado_en?: string
+          flujo_inversion: number
+          id?: string
+          periodo: string
+        }
+        Update: {
+          anio?: string
+          company_id?: string
+          creado_en?: string
+          flujo_inversion?: number
+          id?: string
+          periodo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashflows_inversion_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashflows_inversion_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "cashflows_inversion_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      cashflows_operativo: {
+        Row: {
+          anio: string
+          company_id: string
+          creado_en: string
+          flujo_operativo: number
+          id: string
+          periodo: string
+        }
+        Insert: {
+          anio: string
+          company_id: string
+          creado_en?: string
+          flujo_operativo: number
+          id?: string
+          periodo: string
+        }
+        Update: {
+          anio?: string
+          company_id?: string
+          creado_en?: string
+          flujo_operativo?: number
+          id?: string
+          periodo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashflows_operativo_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashflows_operativo_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "cashflows_operativo_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       catalog_pyg_concepts: {
         Row: {
           concepto_codigo: string
