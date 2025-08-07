@@ -183,8 +183,8 @@ Deno.serve(async (req) => {
     }
 
     // Update job with final status and summary
-    const finalStatus = summary.error_rows === 0 ? 'completed' : 
-                       summary.successful_rows === 0 ? 'failed' : 'completed_with_errors';
+    const finalStatus = summary.error_rows === 0 ? 'done' : 
+                       summary.successful_rows === 0 ? 'failed' : 'done';
 
     await supabase
       .from('import_jobs')
