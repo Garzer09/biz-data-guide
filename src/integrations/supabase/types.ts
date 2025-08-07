@@ -1432,12 +1432,12 @@ export type Database = {
         Insert: {
           email?: string | null
           id?: string | null
-          rol_global?: never
+          rol_global?: string | null
         }
         Update: {
           email?: string | null
           id?: string | null
-          rol_global?: never
+          rol_global?: string | null
         }
         Relationships: []
       }
@@ -1445,6 +1445,14 @@ export type Database = {
         Row: {
           company_id: string | null
           user_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
