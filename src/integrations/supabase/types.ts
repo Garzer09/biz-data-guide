@@ -1479,6 +1479,12 @@ export type Database = {
           benchmark: number
         }[]
       }
+      get_ratios_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
       get_wc_balance_years: {
         Args: { _company_id: string }
         Returns: {

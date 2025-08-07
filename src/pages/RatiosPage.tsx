@@ -65,10 +65,9 @@ export function RatiosPage() {
 
     setIsLoading(true);
     try {
-      // For now, we'll use the balance years as ratios years
-      // In a real implementation, you'd create a specific get_ratios_years RPC
+      // Use dedicated ratios years RPC function
       const { data: yearList, error: errYears } = await supabase
-        .rpc('get_balance_years', { _company_id: companyId });
+        .rpc('get_ratios_years', { _company_id: companyId });
 
       if (errYears) {
         setError(errYears.message);
@@ -137,13 +136,14 @@ export function RatiosPage() {
           
           const newData = payload.new as any;
           if (newData.tipo === 'ratios') {
-            if (newData.estado === 'completed') {
+            if (newData.estado === 'done' || newData.estado === 'completed') {
               fetchRatios(); // Refresh ratios data
+              fetchYears(); // Also refresh years in case this is the first import
               toast({
                 title: "Importación completada",
                 description: "Los ratios financieros han sido importados correctamente",
               });
-            } else if (newData.estado === 'error' || newData.estado === 'completed_with_errors') {
+            } else if (newData.estado === 'error' || newData.estado === 'failed' || newData.estado === 'completed_with_errors') {
               toast({
                 title: "Error en la importación",
                 description: "Hubo problemas al importar los ratios financieros",
@@ -159,7 +159,7 @@ export function RatiosPage() {
       console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [companyId, toast, fetchRatios]);
+  }, [companyId, toast, fetchRatios, fetchYears]);
 
   const formatRatioValue = (value: number | null, format: 'ratio' | 'percentage' | 'times'): string => {
     if (value === null || value === undefined) return 'N/A';
