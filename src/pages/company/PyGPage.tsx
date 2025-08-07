@@ -539,9 +539,19 @@ export function PyGPage() {
       </div>
 
       <Tabs defaultValue="table" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="table">Tabla P&G</TabsTrigger>
-          <TabsTrigger value="waterfall">Gráfico Waterfall</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-lg">
+          <TabsTrigger 
+            value="table" 
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-medium transition-all"
+          >
+            Tabla P&G
+          </TabsTrigger>
+          <TabsTrigger 
+            value="waterfall" 
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md font-medium transition-all"
+          >
+            Gráfico Waterfall
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="table">
