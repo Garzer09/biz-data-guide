@@ -40,7 +40,8 @@ const pageIconMap: Record<string, any> = {
   conclusiones: FileText,
   'dead-point': AlertTriangle,
   nof: DollarSign,
-  debt: Users
+  debt: Users,
+  'pool-bancario': Upload
 };
 
 const pageLabels: Record<string, string> = {
@@ -56,7 +57,8 @@ const pageLabels: Record<string, string> = {
   conclusiones: "Conclusiones",
   'dead-point': "Punto Muerto",
   nof: "Análisis NOF",
-  debt: "Pool Bancario"
+  debt: "Pool Bancario",
+  'pool-bancario': "Pool Bancario"
 };
 
 export function DynamicSidebar({ onPageChange }: SidebarProps) {
@@ -106,6 +108,8 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
       let route = page;
       if (page === 'dead-point') {
         route = 'breakeven';
+      } else if (page === 'pool-bancario') {
+        route = 'pool-bancario';
       }
       
       navigate(`/c/${companyId}/${route}`);

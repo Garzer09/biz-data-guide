@@ -38,7 +38,8 @@ const importTypes = [
   { value: 'cashflow_operativo', label: 'Cashflow Operativo' },
   { value: 'cashflow_inversion', label: 'Cashflow Inversión' },
   { value: 'cashflow_financiacion', label: 'Cashflow Financiación' },
-  { value: 'ratios', label: 'Ratios Financieros' }
+  { value: 'ratios', label: 'Ratios Financieros' },
+  { value: 'debts', label: 'Pool de Deudas' }
 ];
 
 interface ImportDataManagementProps {
@@ -259,6 +260,10 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         functionName = 'import-ratios';
         functionBody = { job_id: jobId };
         console.log('Calling import-ratios function with:', functionBody);
+      } else if (job?.tipo === 'debts') {
+        functionName = 'import-debts';
+        functionBody = { job_id: jobId, scenario: 'base' };
+        console.log('Calling import-debts function with:', functionBody);
       }
         
       const { data, error } = await supabase.functions.invoke(functionName, {
@@ -364,7 +369,8 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       'cashflow_operativo': 'Cashflow Operativo',
       'cashflow_inversion': 'Cashflow Inversión',
       'cashflow_financiacion': 'Cashflow Financiación',
-      'ratios': 'Ratios Financieros'
+      'ratios': 'Ratios Financieros',
+      'debts': 'Pool de Deudas'
     };
     return typeMap[tipo] || tipo;
   };
@@ -444,6 +450,19 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
         link.setAttribute('download', 'ratios_financieros_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else if (templateType === 'debts') {
+      const csvContent = "entidad,tipo,capital,tir,plazo_meses,cuota,proximo_venc,escenario\nBanco Santander,Préstamo ICO,100000,3.5,60,2000,2025-12-31,base\nBBVA,Línea de Crédito,50000,4.2,36,1500,2025-06-30,base\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'debt_pool_template.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();

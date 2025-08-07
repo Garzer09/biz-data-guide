@@ -11,6 +11,7 @@ import { RatiosPage } from './pages/RatiosPage';
 import { BreakevenPage } from './pages/BreakevenPage';
 import { NofPage } from './pages/NofPage';
 import DebtPage from './pages/DebtPage';
+import DebtPoolPage from './pages/DebtPoolPage';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -115,6 +116,15 @@ function App() {
             element={
               <AppLayout>
                 <DebtPage />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/pool-bancario" 
+            element={
+              <AppLayout>
+                <DebtPoolPage />
               </AppLayout>
             } 
           />

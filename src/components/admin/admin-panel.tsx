@@ -1,12 +1,20 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Users, Upload } from "lucide-react";
+import { Building2, Users, Upload, CreditCard } from "lucide-react";
 import { CompaniesManagement } from "./companies-management";
 import { UsersManagement } from "./users-management";
 import { ImportDataManagement } from "./import-data-management";
+import { DebtUploadModal } from "../debt/debt-upload-modal";
 
 export function AdminPanel() {
+  const [isDebtModalOpen, setIsDebtModalOpen] = useState(false);
+
+  const handleDebtUploadSuccess = () => {
+    // Refresh any data if needed
+    console.log('Debt upload completed successfully');
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -17,7 +25,7 @@ export function AdminPanel() {
       </div>
 
       <Tabs defaultValue="companies" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="companies" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             Empresas
@@ -28,7 +36,11 @@ export function AdminPanel() {
           </TabsTrigger>
           <TabsTrigger value="imports" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            Importaciones Globales
+            Importaciones
+          </TabsTrigger>
+          <TabsTrigger value="debts" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Pool de Deudas
           </TabsTrigger>
         </TabsList>
 
@@ -73,7 +85,70 @@ export function AdminPanel() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="debts">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestión de Pool de Deudas</CardTitle>
+              <CardDescription>
+                Carga masiva de datos de deudas para múltiples empresas y gestión de escenarios
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium">Importación de Deudas</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Sube archivos CSV con datos de deudas para gestionar el pool bancario de las empresas
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setIsDebtModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                >
+                  <Upload className="h-4 w-4" />
+                  Cargar Deudas
+                </button>
+              </div>
+              
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <h4 className="font-medium mb-2">Formato del Archivo CSV</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  El archivo debe contener las siguientes columnas obligatorias:
+                </p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <strong>Campos obligatorios:</strong>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>entidad (nombre del banco/entidad)</li>
+                      <li>tipo (Préstamo ICO, Línea de Crédito, etc.)</li>
+                      <li>capital (importe pendiente)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <strong>Campos opcionales:</strong>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>tir (tasa de interés, 0-100%)</li>
+                      <li>plazo_meses (plazo en meses)</li>
+                      <li>cuota (cuota mensual)</li>
+                      <li>proximo_venc (fecha YYYY-MM-DD)</li>
+                      <li>escenario (nombre del escenario)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <ImportDataManagement />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      <DebtUploadModal
+        isOpen={isDebtModalOpen}
+        onClose={() => setIsDebtModalOpen(false)}
+        onSuccess={handleDebtUploadSuccess}
+      />
     </div>
   );
 }
