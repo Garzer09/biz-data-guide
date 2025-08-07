@@ -65,6 +65,9 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
      }
+
+    // Get job details
+    console.log('Fetching job details for:', job_id)
     const { data: job, error: jobError } = await supabase
       .from('import_jobs')
       .select('company_id, storage_path, tipo')
@@ -74,30 +77,36 @@ Deno.serve(async (req) => {
     if (jobError || !job) {
       console.error('Job not found:', jobError)
       return new Response(
-        JSON.stringify({ error: 'Job not found' }),
+        JSON.stringify({ error: 'Job not found', details: jobError }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    console.log('Job found:', job)
+
     // Update job status to processing
+    console.log('Updating job status to processing')
     await supabase
       .from('import_jobs')
       .update({ estado: 'processing' })
       .eq('id', job_id)
 
     // Download file from storage
+    console.log('Downloading file from storage:', job.storage_path)
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('import-files')
       .download(job.storage_path)
 
-    if (downloadError) {
+    if (downloadError || !fileData) {
       console.error('Error downloading file:', downloadError)
-      await updateJobStatus(job_id, 'failed', { error: 'File download failed' })
+      await updateJobStatus(job_id, 'failed', { error: 'File download failed', details: downloadError })
       return new Response(
-        JSON.stringify({ error: 'File download failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'File download failed', details: downloadError }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('File downloaded successfully, size:', fileData.size)
 
     // Convert file to text
     const fileText = await fileData.text()
