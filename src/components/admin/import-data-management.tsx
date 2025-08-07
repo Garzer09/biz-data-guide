@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Calendar, Building2, AlertCircle, CheckCircle, Play } from "lucide-react";
+import { Upload, FileText, Calendar, Building2, AlertCircle, CheckCircle, Play, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Company {
   id: string;
@@ -38,9 +40,11 @@ export function ImportDataManagement() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("pyg_anual");
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [processingJobs, setProcessingJobs] = useState<Set<string>>(new Set());
+  const [selectedJobDetail, setSelectedJobDetail] = useState<ImportJob | null>(null);
   const { isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -52,14 +56,41 @@ export function ImportDataManagement() {
 
   const fetchData = async () => {
     try {
-      // Fetch companies
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('companies')
-        .select('id, name')
-        .eq('estado', 'ACTIVO')
-        .order('name');
-
-      if (companiesError) throw companiesError;
+      setLoading(true);
+      
+      // Fetch companies based on admin status
+      let companiesData;
+      if (isAdmin) {
+        // Admin can see all companies
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('estado', 'ACTIVO')
+          .order('name');
+        
+        if (error) throw error;
+        companiesData = data;
+      } else {
+        // Regular users see accessible companies
+        const { data, error } = await supabase
+          .rpc('get_accessible_companies', { _user_id: (await supabase.auth.getUser()).data.user?.id });
+        
+        if (error) throw error;
+        
+        // Get company details for accessible company IDs
+        if (data && data.length > 0) {
+          const { data: companyDetails, error: detailsError } = await supabase
+            .from('companies')
+            .select('id, name')
+            .in('id', data.map((c: any) => c.company_id))
+            .eq('estado', 'ACTIVO');
+          
+          if (detailsError) throw detailsError;
+          companiesData = companyDetails;
+        } else {
+          companiesData = [];
+        }
+      }
 
       // Fetch import jobs with company info
       const { data: jobsData, error: jobsError } = await supabase
@@ -94,12 +125,12 @@ export function ImportDataManagement() {
     }
   };
 
-  const handleFileUpload = async () => {
-    if (!selectedCompanyId || !selectedType || !file) {
+  const uploadFile = async () => {
+    if (!file || !selectedCompanyId) {
       toast({
         title: "Error",
-        description: "Completa todos los campos y selecciona un archivo",
-        variant: "destructive",
+        description: "Por favor selecciona empresa y archivo",
+        variant: "destructive"
       });
       return;
     }
@@ -107,13 +138,25 @@ export function ImportDataManagement() {
     try {
       setProcessing(true);
       
+      // Generate unique file path
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const fileExt = file.name.split('.').pop();
+      const filePath = `raw_uploads/${selectedCompanyId}/${timestamp}/${file.name}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('import-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
       // Create import job record
       const { data: jobData, error: jobError } = await supabase
         .from('import_jobs')
         .insert({
           company_id: selectedCompanyId,
-          tipo: 'pyg_anual',
-          storage_path: 'pending', // Will be updated after file upload
+          tipo: selectedType,
+          storage_path: filePath,
           estado: 'pending',
           resumen: null
         })
@@ -122,80 +165,72 @@ export function ImportDataManagement() {
 
       if (jobError) throw jobError;
 
-      // Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${jobData.id}.${fileExt}`;
-      const filePath = `${selectedCompanyId}/${fileName}`;
+      // Reset form and close modal
+      setFile(null);
+      setSelectedCompanyId("");
+      setSelectedType("pyg_anual");
+      setIsModalOpen(false);
 
-      const { error: uploadError } = await supabase.storage
-        .from('import-files')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Update job with storage path
-      const { error: updateError } = await supabase
-        .from('import_jobs')
-        .update({ storage_path: filePath })
-        .eq('id', jobData.id);
-
-      if (updateError) throw updateError;
+      // Refresh data
+      await fetchData();
 
       toast({
         title: "Archivo subido",
-        description: "El archivo se ha subido correctamente. Haz clic en 'Procesar' para procesarlo.",
+        description: "El archivo ha sido subido y está listo para procesar",
       });
 
-      setIsModalOpen(false);
-      setSelectedCompanyId("");
-      setSelectedType("");
-      setFile(null);
-      fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading file:', error);
       toast({
         title: "Error",
-        description: "No se pudo subir el archivo",
-        variant: "destructive",
+        description: error.message || "Error al subir el archivo",
+        variant: "destructive"
       });
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleProcessJob = async (jobId: string, jobType: string) => {
+  const processJob = async (jobId: string) => {
     try {
-      setProcessing(true);
-      
-      if (jobType === 'pyg_anual') {
-        const { error } = await supabase.functions.invoke('import-pyg-anual', {
-          body: { job_id: jobId }
-        });
+      setProcessingJobs(prev => new Set([...prev, jobId]));
 
-        if (error) throw error;
-        
-        toast({
-          title: "Procesamiento iniciado",
-          description: "El archivo P&G anual está siendo procesado",
-        });
-      } else {
-        toast({
-          title: "Tipo no soportado",
-          description: "El procesamiento de este tipo de archivo aún no está implementado",
-          variant: "destructive",
-        });
-      }
-      
-      fetchData();
-    } catch (error) {
+      // Update job status to processing in UI immediately
+      setImportJobs(prev => prev.map(job => 
+        job.id === jobId ? { ...job, estado: 'processing' } : job
+      ));
+
+      // Call the import edge function
+      const { data, error } = await supabase.functions.invoke('import-pyg-anual', {
+        body: { job_id: jobId }
+      });
+
+      if (error) throw error;
+
+      // Refresh the specific job data
+      await fetchData();
+
+      toast({
+        title: "Procesamiento completado",
+        description: `Estado: ${data.status}. ${data.summary.ok_rows} filas exitosas, ${data.summary.error_rows} errores.`,
+      });
+
+    } catch (error: any) {
       console.error('Error processing job:', error);
       toast({
-        title: "Error",
-        description: "No se pudo procesar el archivo",
-        variant: "destructive",
+        title: "Error en procesamiento",
+        description: error.message || "Error al procesar el archivo",
+        variant: "destructive"
       });
+      
+      // Refresh data to get current status
+      await fetchData();
     } finally {
-      setProcessing(false);
+      setProcessingJobs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(jobId);
+        return newSet;
+      });
     }
   };
 
@@ -233,7 +268,7 @@ export function ImportDataManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Carga de Datos e Historial</h2>
+        <h2 className="text-xl font-semibold">Gestión de Importaciones</h2>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
@@ -291,7 +326,7 @@ export function ImportDataManagement() {
                 />
               </div>
 
-              <Button onClick={handleFileUpload} className="w-full" disabled={processing}>
+              <Button onClick={uploadFile} className="w-full" disabled={processing}>
                 {processing ? "Subiendo..." : "Subir Archivo"}
               </Button>
             </div>
@@ -308,71 +343,201 @@ export function ImportDataManagement() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {importJobs.map((job) => (
-              <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-medium flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      {job.companies.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {getTypeLabel(job.tipo)}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(job.creado_en).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="text-right text-sm">
-                    {job.resumen && (
-                      <>
-                        <div className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-3 w-3" />
-                          {job.resumen.ok_rows?.length || 0} exitosos
-                        </div>
-                        {(job.resumen.error_rows?.length || 0) > 0 && (
-                          <div className="flex items-center gap-1 text-red-600">
-                            <AlertCircle className="h-3 w-3" />
-                            {job.resumen.error_rows?.length || 0} errores
-                          </div>
-                        )}
-                        <div className="text-muted-foreground">
-                          Total: {(job.resumen.ok_rows?.length || 0) + (job.resumen.error_rows?.length || 0)}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {job.estado === 'pending' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleProcessJob(job.id, job.tipo)}
-                        disabled={processing}
-                      >
-                        <Play className="h-3 w-3 mr-1" />
-                        Procesar
-                      </Button>
-                    )}
-                    {getStatusBadge(job.estado)}
-                  </div>
-                </div>
+            {importJobs.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                No hay importaciones registradas aún
               </div>
-            ))}
-          </div>
-
-          {importJobs.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              No hay importaciones registradas aún
+            )}
+            
+            <div className="space-y-4">
+              {importJobs.map((job) => (
+                <Card key={job.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{job.companies.name}</span>
+                          <Badge variant="outline">{job.tipo}</Badge>
+                          {getStatusBadge(job.estado)}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(job.creado_en).toLocaleDateString('es-ES', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        {/* Summary stats */}
+                        <div className="text-right text-sm">
+                          {job.resumen && (
+                            <>
+                              <div className="flex items-center gap-1 text-green-600">
+                                <CheckCircle className="h-3 w-3" />
+                                {job.resumen.ok_rows?.length || 0} exitosos
+                              </div>
+                              {(job.resumen.error_rows?.length || 0) > 0 && (
+                                <div className="flex items-center gap-1 text-red-600">
+                                  <AlertCircle className="h-3 w-3" />
+                                  {job.resumen.error_rows?.length || 0} errores
+                                </div>
+                              )}
+                              <div className="text-muted-foreground">
+                                Total: {(job.resumen.ok_rows?.length || 0) + (job.resumen.error_rows?.length || 0)}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2">
+                          {(job.estado === 'done' || job.estado === 'failed') && job.resumen && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedJobDetail(job)}
+                            >
+                              <Info className="h-4 w-4" />
+                            </Button>
+                          )}
+                          
+                          {(job.estado === 'pending' || job.estado === 'failed') && (
+                            <Button
+                              size="sm"
+                              onClick={() => processJob(job.id)}
+                              disabled={processingJobs.has(job.id)}
+                            >
+                              <Play className="h-4 w-4 mr-1" />
+                              {processingJobs.has(job.id) ? 'Procesando...' : 'Procesar'}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Job Detail Drawer */}
+      {selectedJobDetail && (
+        <Drawer open={!!selectedJobDetail} onOpenChange={() => setSelectedJobDetail(null)}>
+          <DrawerContent className="max-h-[80vh]">
+            <DrawerHeader>
+              <DrawerTitle>Detalle de Importación</DrawerTitle>
+              <DrawerDescription>
+                {selectedJobDetail.companies.name} - {selectedJobDetail.tipo} - {getStatusBadge(selectedJobDetail.estado)}
+              </DrawerDescription>
+            </DrawerHeader>
+            
+            <div className="p-6 space-y-6">
+              {selectedJobDetail.resumen && (
+                <>
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-green-600">
+                          {selectedJobDetail.resumen.ok_rows?.length || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Filas exitosas</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-red-600">
+                          {selectedJobDetail.resumen.error_rows?.length || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Filas con error</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {selectedJobDetail.resumen.warnings?.length || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Advertencias</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Error Details */}
+                  {selectedJobDetail.resumen.error_rows && selectedJobDetail.resumen.error_rows.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-red-600">Errores encontrados</h3>
+                      <ScrollArea className="h-60 w-full border rounded-md p-4">
+                        <div className="space-y-2">
+                          {selectedJobDetail.resumen.error_rows.map((error: any, index: number) => (
+                            <div key={index} className="p-3 bg-red-50 border-l-4 border-red-400 rounded">
+                              <div className="font-medium text-sm">Fila {error.row}</div>
+                              <div className="text-sm text-red-700">{error.error}</div>
+                              {error.data && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {JSON.stringify(error.data)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+
+                  {/* Success Details */}
+                  {selectedJobDetail.resumen.ok_rows && selectedJobDetail.resumen.ok_rows.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-green-600">Importaciones exitosas</h3>
+                      <ScrollArea className="h-40 w-full border rounded-md p-4">
+                        <div className="space-y-1">
+                          {selectedJobDetail.resumen.ok_rows.slice(0, 10).map((success: any, index: number) => (
+                            <div key={index} className="p-2 bg-green-50 border-l-4 border-green-400 rounded text-sm">
+                              Fila {success.row}: {success.data.concepto_codigo} - {success.data.anio} - {success.data.valor_total}
+                            </div>
+                          ))}
+                          {selectedJobDetail.resumen.ok_rows.length > 10 && (
+                            <div className="text-sm text-muted-foreground text-center py-2">
+                              ... y {selectedJobDetail.resumen.ok_rows.length - 10} más
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+
+                  {/* Warnings */}
+                  {selectedJobDetail.resumen.warnings && selectedJobDetail.resumen.warnings.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-yellow-600">Advertencias</h3>
+                      <ScrollArea className="h-32 w-full border rounded-md p-4">
+                        <div className="space-y-1">
+                          {selectedJobDetail.resumen.warnings.map((warning: string, index: number) => (
+                            <div key={index} className="p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded text-sm">
+                              {warning}
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 }
