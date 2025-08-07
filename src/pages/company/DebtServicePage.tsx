@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, ComposedChart, Cell } from 'recharts';
 import { Upload } from "lucide-react";
+import { DebtServiceUploadModal } from "@/components/debt/debt-service-upload-modal";
 
 interface DebtServiceDetail {
   periodo: string;
@@ -39,6 +40,7 @@ export function DebtServicePage() {
   const [debtServiceData, setDebtServiceData] = useState<DebtServiceDetail[]>([]);
   const [kpis, setKPIs] = useState<DebtServiceKPIs | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [stressTest, setStressTest] = useState<StressTestData>({
     ebitda_adjustment: 0,
     interest_adjustment: 0
@@ -46,16 +48,23 @@ export function DebtServicePage() {
 
   useEffect(() => {
     if (companyId) {
-      fetchPeriods();
-      fetchKPIs();
+      initializeData();
     }
   }, [companyId]);
 
-  useEffect(() => {
-    if (companyId && periods.length > 0 && !selectedPeriod) {
-      setSelectedPeriod(periods[0]?.substring(0, 4) || "");
+  const initializeData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchPeriods(),
+        fetchKPIs()
+      ]);
+    } catch (error) {
+      console.error('Error initializing data:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [periods, selectedPeriod]);
+  };
 
   useEffect(() => {
     if (companyId && selectedPeriod) {
@@ -65,12 +74,20 @@ export function DebtServicePage() {
 
   const fetchPeriods = async () => {
     try {
+      console.log('Fetching debt service periods for company:', companyId);
       const { data, error } = await supabase.rpc('get_debt_service_periods', {
         _company_id: companyId
       });
 
       if (error) throw error;
-      setPeriods((data || []).map((item: any) => item.periodo));
+      console.log('Debt service periods data:', data);
+      const periodsList = (data || []).map((item: any) => item.periodo);
+      setPeriods(periodsList);
+      
+      // Set initial period if we have data
+      if (periodsList.length > 0 && !selectedPeriod) {
+        setSelectedPeriod(periodsList[0]?.substring(0, 4) || "");
+      }
     } catch (error) {
       console.error('Error fetching periods:', error);
       toast({
@@ -83,6 +100,7 @@ export function DebtServicePage() {
 
   const fetchKPIs = async () => {
     try {
+      console.log('Fetching debt service KPIs for company:', companyId);
       const { data, error } = await supabase
         .from('vw_debt_service_kpis')
         .select('*')
@@ -90,6 +108,7 @@ export function DebtServicePage() {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
+      console.log('Debt service KPIs data:', data);
       setKPIs(data);
     } catch (error) {
       console.error('Error fetching KPIs:', error);
@@ -102,8 +121,10 @@ export function DebtServicePage() {
   };
 
   const fetchDebtServiceData = async () => {
-    setLoading(true);
+    if (!selectedPeriod) return;
+    
     try {
+      console.log('Fetching debt service data for period:', selectedPeriod);
       const { data, error } = await supabase
         .from('vw_debt_service_detail')
         .select('*')
@@ -112,6 +133,7 @@ export function DebtServicePage() {
         .order('periodo');
 
       if (error) throw error;
+      console.log('Debt service detail data:', data);
       setDebtServiceData(data || []);
     } catch (error) {
       console.error('Error fetching debt service data:', error);
@@ -120,8 +142,6 @@ export function DebtServicePage() {
         description: "Error al cargar datos de servicio de deuda",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -130,9 +150,11 @@ export function DebtServicePage() {
       title: "Éxito",
       description: "Datos de servicio de deuda importados correctamente",
     });
-    fetchPeriods();
-    fetchKPIs();
-    fetchDebtServiceData();
+    // Reinitialize all data
+    initializeData();
+    if (selectedPeriod) {
+      fetchDebtServiceData();
+    }
   };
 
   const calculateStressedData = () => {
@@ -230,7 +252,7 @@ export function DebtServicePage() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setUploadModalOpen(true)}>
             <Upload className="mr-2 h-4 w-4" />
             Cargar Servicio Deuda
           </Button>
@@ -439,13 +461,19 @@ export function DebtServicePage() {
             <p className="text-muted-foreground mb-4">
               No hay datos de servicio de deuda disponibles para este período.
             </p>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setUploadModalOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Cargar Datos de Servicio de Deuda
             </Button>
           </CardContent>
         </Card>
       )}
+
+      <DebtServiceUploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSuccess={handleUploadSuccess}
+      />
     </div>
   );
 }
