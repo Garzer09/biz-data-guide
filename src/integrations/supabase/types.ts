@@ -207,6 +207,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "company_pages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       company_profile: {
@@ -251,6 +258,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "company_profile_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       fs_balance: {
@@ -285,6 +299,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_balance_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "fs_balance_period_id_fkey"
@@ -327,6 +348,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_cashflow_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "fs_cashflow_period_id_fkey"
@@ -372,6 +400,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_income_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
           },
           {
             foreignKeyName: "fs_income_period_id_fkey"
@@ -456,6 +491,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "import_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
       periods: {
@@ -487,6 +529,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "periods_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -595,6 +644,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ratios_calc_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+          {
             foreignKeyName: "ratios_calc_period_id_fkey"
             columns: ["period_id"]
             isOneToOne: false
@@ -630,10 +686,69 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
         ]
       }
     }
     Views: {
+      company_access: {
+        Row: {
+          company_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles_vw: {
+        Row: {
+          email: string | null
+          id: string | null
+          rol_global: string | null
+        }
+        Insert: {
+          email?: string | null
+          id?: string | null
+          rol_global?: never
+        }
+        Update: {
+          email?: string | null
+          id?: string | null
+          rol_global?: never
+        }
+        Relationships: []
+      }
+      user_company_vw: {
+        Row: {
+          company_id: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       vw_kpis_anual: {
         Row: {
           anio: string | null
@@ -695,6 +810,14 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      has_company_access: {
+        Args: { _company_id: string }
+        Returns: boolean
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
     }
     Enums: {
