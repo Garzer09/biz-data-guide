@@ -20,7 +20,14 @@ import {
   Target,
   LineChart,
   Users,
-  Upload
+  Upload,
+  Scale,
+  Crosshair,
+  CreditCard,
+  Landmark,
+  CheckCircle,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,40 +36,87 @@ interface SidebarProps {
 
 const pageIconMap: Record<string, any> = {
   dashboard: BarChart3,
-  empresa: Building2,
-  pyg: Calculator,
-  balance: PieChart,
-  cashflow: DollarSign,
-  ratios: Activity,
-  sensibilidad: AlertTriangle,
-  proyecciones: LineChart,
-  eva: Target,
-  conclusiones: FileText,
-  'dead-point': AlertTriangle,
-  nof: DollarSign,
-  debt: Users,
-  'pool-bancario': Upload
+  company_profile: Building2,
+  pyg: FileText,
+  balance: Scale,
+  ratios: Calculator,
+  cashflow: TrendingUp,
+  nof: Target,
+  breakeven: Crosshair,
+  debts: CreditCard,
+  debt_service: Landmark,
+  pyg_analytic: TrendingUp,
+  sales_segments: PieChart,
+  assumptions: Settings,
+  projections: LineChart,
+  sensitivity: AlertTriangle,
+  eva: DollarSign,
+  conclusions: CheckCircle,
 };
 
-const pageLabels: Record<string, string> = {
-  dashboard: "Dashboard Principal",
-  empresa: "Perfil de Empresa",
-  pyg: "Cuenta P&G",
-  balance: "Balance",
-  cashflow: "Flujos de Caja", 
-  ratios: "Ratios Financieros",
-  sensibilidad: "Análisis Sensibilidad",
-  proyecciones: "Proyecciones",
-  eva: "Análisis EVA",
-  conclusiones: "Conclusiones",
-  'dead-point': "Punto Muerto",
-  nof: "Análisis NOF",
-  debt: "Pool Bancario",
-  'pool-bancario': "Pool Bancario"
-};
+const sidebarStructure = [
+  {
+    title: "1. Resumen Ejecutivo",
+    items: [
+      { key: "dashboard", label: "Dashboard Principal" }
+    ]
+  },
+  {
+    title: "2. Descripción Empresa", 
+    items: [
+      { key: "company_profile", label: "Descripción de la Empresa" }
+    ]
+  },
+  {
+    title: "3. Análisis Situación Actual",
+    items: [
+      { key: "pyg", label: "Cuenta P&G" },
+      { key: "balance", label: "Balance Situación" },
+      { key: "ratios", label: "Ratios Financieros" },
+      { key: "cashflow", label: "Estado Flujos Caja" },
+      { key: "nof", label: "Análisis NOF" },
+      { key: "breakeven", label: "Punto Muerto" },
+      { key: "debts", label: "Endeudamiento" },
+      { key: "debt_service", label: "Servicio Deuda" },
+      { key: "pyg_analytic", label: "P&G Analítico Actual" },
+      { key: "sales_segments", label: "Ventas por Segmentos" }
+    ]
+  },
+  {
+    title: "4. Supuestos y Plan Inversiones",
+    items: [
+      { key: "assumptions", label: "Supuestos y Plan Inversiones" }
+    ]
+  },
+  {
+    title: "5. Proyecciones (Año 1-3)",
+    items: [
+      { key: "projections", label: "Proyecciones" }
+    ]
+  },
+  {
+    title: "6. Análisis de Sensibilidad",
+    items: [
+      { key: "sensitivity", label: "Análisis de Sensibilidad" }
+    ]
+  },
+  {
+    title: "7. Valoración EVA",
+    items: [
+      { key: "eva", label: "Valoración EVA" }
+    ]
+  },
+  {
+    title: "8. Conclusiones",
+    items: [
+      { key: "conclusions", label: "Conclusiones y Recomendaciones" }
+    ]
+  }
+];
 
 export function DynamicSidebar({ onPageChange }: SidebarProps) {
   const [enabledPages, setEnabledPages] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const { companyId } = useParams();
   const { user, isAdmin, signOut } = useAuth();
@@ -102,13 +156,20 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
     }
   };
 
+  const toggleSection = (sectionTitle: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionTitle]: !prev[sectionTitle]
+    }));
+  };
+
   const handleNavigation = (page: string) => {
     if (companyId) {
       // Map specific page IDs to routes
       let route = page;
-      if (page === 'dead-point') {
-        route = 'breakeven';
-      } else if (page === 'pool-bancario') {
+      if (page === 'company_profile') {
+        route = 'profile';
+      } else if (page === 'debt_service') {
         route = 'pool-bancario';
       }
       
@@ -166,24 +227,51 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
           </Button>
         )}
 
-        {/* Company Pages - Based on enabled_pages */}
-        {companyId && enabledPages.map((page) => {
-          const Icon = pageIconMap[page] || FileText;
-          const label = pageLabels[page] || page;
+        {/* Company Pages - Hierarchical Structure */}
+        {companyId && sidebarStructure.map((section) => {
+          const hasEnabledItems = section.items.some(item => enabledPages.includes(item.key));
+          if (!hasEnabledItems) return null;
+
+          const isExpanded = expandedSections[section.title] !== false; // Default to expanded
           
           return (
-            <Button
-              key={page}
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3 h-auto p-3 text-sidebar-foreground hover:bg-sidebar-accent",
-                currentPage === page && "bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
-              onClick={() => handleNavigation(page)}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="text-sm">{label}</span>
-            </Button>
+            <div key={section.title} className="space-y-1">
+              {/* Section Header */}
+              <Button
+                variant="ghost"
+                className="w-full justify-between h-auto p-2 text-xs font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent"
+                onClick={() => toggleSection(section.title)}
+              >
+                <span>{section.title}</span>
+                {isExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
+              </Button>
+
+              {/* Section Items */}
+              {isExpanded && section.items.map((item) => {
+                if (!enabledPages.includes(item.key)) return null;
+                
+                const Icon = pageIconMap[item.key] || FileText;
+                
+                return (
+                  <Button
+                    key={item.key}
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start gap-3 h-auto p-3 pl-6 text-sidebar-foreground hover:bg-sidebar-accent",
+                      currentPage === item.key && "bg-primary text-primary-foreground hover:bg-primary/90"
+                    )}
+                    onClick={() => handleNavigation(item.key)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-sm">{item.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
           );
         })}
 
