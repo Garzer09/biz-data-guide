@@ -4,51 +4,51 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface FinancialAssumptions {
   // Revenue Assumptions
-  salesGrowth: number;
-  averagePrice: number;
-  productMix: string;
+  sales_growth: number;
+  average_price: number;
+  product_mix: string;
   
   // Operating Costs
   cogs: number;
-  opexGrowth: number;
-  staffCosts: number;
+  opex_growth: number;
+  staff_costs: number;
   
   // Working Capital
-  daysReceivable: number;
-  daysPayable: number;
-  daysInventory: number;
+  days_receivable: number;
+  days_payable: number;
+  days_inventory: number;
   
   // Debt & WACC
-  debtEquityRatio: number;
-  costOfDebt: number;
-  costOfEquity: number;
+  debt_equity_ratio: number;
+  cost_of_debt: number;
+  cost_of_equity: number;
   
   // CAPEX & Amortization
-  capexAsPercentage: number;
-  depreciationRate: number;
+  capex_as_percentage: number;
+  depreciation_rate: number;
   
   // Tax & Others
-  taxRate: number;
-  otherAssumptions: string;
+  tax_rate: number;
+  other_assumptions: string;
 }
 
 const DEFAULT_ASSUMPTIONS: FinancialAssumptions = {
-  salesGrowth: 0,
-  averagePrice: 0,
-  productMix: '',
+  sales_growth: 0,
+  average_price: 0,
+  product_mix: '',
   cogs: 0,
-  opexGrowth: 0,
-  staffCosts: 0,
-  daysReceivable: 30,
-  daysPayable: 30,
-  daysInventory: 30,
-  debtEquityRatio: 0,
-  costOfDebt: 0,
-  costOfEquity: 0,
-  capexAsPercentage: 0,
-  depreciationRate: 0,
-  taxRate: 25,
-  otherAssumptions: '',
+  opex_growth: 0,
+  staff_costs: 0,
+  days_receivable: 30,
+  days_payable: 30,
+  days_inventory: 30,
+  debt_equity_ratio: 0,
+  cost_of_debt: 0,
+  cost_of_equity: 0,
+  capex_as_percentage: 0,
+  depreciation_rate: 0,
+  tax_rate: 25,
+  other_assumptions: '',
 };
 
 export function useAssumptions(companyId: string) {
@@ -70,11 +70,11 @@ export function useAssumptions(companyId: string) {
     try {
       const { data, error: fetchError } = await supabase
         .from('financial_assumptions')
-        .select('*')
+        .select('sales_growth, average_price, product_mix, cogs, opex_growth, staff_costs, days_receivable, days_payable, days_inventory, debt_equity_ratio, cost_of_debt, cost_of_equity, capex_as_percentage, depreciation_rate, tax_rate, other_assumptions')
         .eq('company_id', companyId)
-        .single();
+        .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         throw fetchError;
       }
 
@@ -103,7 +103,6 @@ export function useAssumptions(companyId: string) {
         .upsert({
           company_id: companyId,
           ...assumptions,
-          updated_at: new Date().toISOString(),
         });
 
       if (saveError) {

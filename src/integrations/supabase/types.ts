@@ -666,6 +666,97 @@ export type Database = {
           },
         ]
       }
+      financial_assumptions: {
+        Row: {
+          average_price: number | null
+          capex_as_percentage: number | null
+          cogs: number | null
+          company_id: string
+          cost_of_debt: number | null
+          cost_of_equity: number | null
+          created_at: string
+          days_inventory: number | null
+          days_payable: number | null
+          days_receivable: number | null
+          debt_equity_ratio: number | null
+          depreciation_rate: number | null
+          id: string
+          opex_growth: number | null
+          other_assumptions: string | null
+          product_mix: string | null
+          sales_growth: number | null
+          staff_costs: number | null
+          tax_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          average_price?: number | null
+          capex_as_percentage?: number | null
+          cogs?: number | null
+          company_id: string
+          cost_of_debt?: number | null
+          cost_of_equity?: number | null
+          created_at?: string
+          days_inventory?: number | null
+          days_payable?: number | null
+          days_receivable?: number | null
+          debt_equity_ratio?: number | null
+          depreciation_rate?: number | null
+          id?: string
+          opex_growth?: number | null
+          other_assumptions?: string | null
+          product_mix?: string | null
+          sales_growth?: number | null
+          staff_costs?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          average_price?: number | null
+          capex_as_percentage?: number | null
+          cogs?: number | null
+          company_id?: string
+          cost_of_debt?: number | null
+          cost_of_equity?: number | null
+          created_at?: string
+          days_inventory?: number | null
+          days_payable?: number | null
+          days_receivable?: number | null
+          debt_equity_ratio?: number | null
+          depreciation_rate?: number | null
+          id?: string
+          opex_growth?: number | null
+          other_assumptions?: string | null
+          product_mix?: string | null
+          sales_growth?: number | null
+          staff_costs?: number | null
+          tax_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_assumptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_assumptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "financial_assumptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       fs_balance: {
         Row: {
           company_id: string
