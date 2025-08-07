@@ -116,6 +116,51 @@ export function RatiosPage() {
     }
   }, [companyId, selectedYear]);
 
+  // Real-time subscription for import job updates
+  useEffect(() => {
+    if (!companyId) return;
+
+    console.log('Setting up real-time subscription for company:', companyId);
+    
+    const channel = supabase
+      .channel('import-jobs-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'import_jobs',
+          filter: `company_id=eq.${companyId}`
+        },
+        (payload) => {
+          console.log('Received import job update:', payload);
+          
+          const newData = payload.new as any;
+          if (newData.tipo === 'ratios') {
+            if (newData.estado === 'completed') {
+              fetchRatios(); // Refresh ratios data
+              toast({
+                title: "Importación completada",
+                description: "Los ratios financieros han sido importados correctamente",
+              });
+            } else if (newData.estado === 'error' || newData.estado === 'completed_with_errors') {
+              toast({
+                title: "Error en la importación",
+                description: "Hubo problemas al importar los ratios financieros",
+                variant: "destructive"
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [companyId, toast, fetchRatios]);
+
   const formatRatioValue = (value: number | null, format: 'ratio' | 'percentage' | 'times'): string => {
     if (value === null || value === undefined) return 'N/A';
     

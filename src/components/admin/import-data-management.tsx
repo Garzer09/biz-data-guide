@@ -37,7 +37,8 @@ const importTypes = [
   { value: 'balance_financiero', label: 'Balance Financiero' },
   { value: 'cashflow_operativo', label: 'Cashflow Operativo' },
   { value: 'cashflow_inversion', label: 'Cashflow Inversión' },
-  { value: 'cashflow_financiacion', label: 'Cashflow Financiación' }
+  { value: 'cashflow_financiacion', label: 'Cashflow Financiación' },
+  { value: 'ratios', label: 'Ratios Financieros' }
 ];
 
 interface ImportDataManagementProps {
@@ -254,6 +255,9 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       } else if (job?.tipo?.startsWith('cashflow_')) {
         functionName = 'import-cashflow';
         functionBody = { job_id: jobId, tipo: job.tipo.replace('cashflow_', '') };
+      } else if (job?.tipo === 'ratios') {
+        functionName = 'import-ratios';
+        functionBody = { job_id: jobId };
       }
         
       const { data, error } = await supabase.functions.invoke(functionName, {
@@ -358,7 +362,8 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       'balance_financiero': 'Balance Financiero',
       'cashflow_operativo': 'Cashflow Operativo',
       'cashflow_inversion': 'Cashflow Inversión',
-      'cashflow_financiacion': 'Cashflow Financiación'
+      'cashflow_financiacion': 'Cashflow Financiación',
+      'ratios': 'Ratios Financieros'
     };
     return typeMap[tipo] || tipo;
   };
@@ -425,6 +430,19 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
         link.setAttribute('download', 'cashflow_financiacion_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else if (templateType === 'ratios') {
+      const csvContent = "company_code,anio,periodo,ratio_name,ratio_value,benchmark\nEMP_DEMO_2,2024,2024-12,Liquidez Corriente,1.5,1.5\nEMP_DEMO_2,2024,2024-12,ROA,0.05,0.05\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'ratios_financieros_template.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
