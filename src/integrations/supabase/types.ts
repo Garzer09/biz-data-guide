@@ -550,6 +550,58 @@ export type Database = {
           },
         ]
       }
+      debt_service: {
+        Row: {
+          company_id: string
+          creado_en: string | null
+          flujo_operativo: number
+          id: string
+          intereses: number
+          periodo: string
+          principal: number
+        }
+        Insert: {
+          company_id: string
+          creado_en?: string | null
+          flujo_operativo: number
+          id?: string
+          intereses: number
+          periodo: string
+          principal: number
+        }
+        Update: {
+          company_id?: string
+          creado_en?: string | null
+          flujo_operativo?: number
+          id?: string
+          intereses?: number
+          periodo?: string
+          principal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       debts: {
         Row: {
           capital: number
@@ -1446,6 +1498,87 @@ export type Database = {
           },
         ]
       }
+      vw_debt_service_detail: {
+        Row: {
+          company_id: string | null
+          flujo_operativo: number | null
+          intereses: number | null
+          periodo: string | null
+          principal: number | null
+          servicio_total: number | null
+        }
+        Insert: {
+          company_id?: string | null
+          flujo_operativo?: number | null
+          intereses?: number | null
+          periodo?: string | null
+          principal?: number | null
+          servicio_total?: never
+        }
+        Update: {
+          company_id?: string | null
+          flujo_operativo?: number | null
+          intereses?: number | null
+          periodo?: string | null
+          principal?: number | null
+          servicio_total?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      vw_debt_service_kpis: {
+        Row: {
+          company_id: string | null
+          dscr_minimo: number | null
+          dscr_promedio: number | null
+          meses_en_riesgo: number | null
+          servicio_anual: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "debt_service_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       vw_debt_summary: {
         Row: {
           company_id: string | null
@@ -2025,6 +2158,12 @@ export type Database = {
         Returns: {
           escenario: string
           num_deudas: number
+        }[]
+      }
+      get_debt_service_periods: {
+        Args: { _company_id: string }
+        Returns: {
+          periodo: string
         }[]
       }
       get_debt_years: {
