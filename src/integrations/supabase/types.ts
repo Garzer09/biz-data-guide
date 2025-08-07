@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      allocation_rules: {
+        Row: {
+          anio: string
+          company_id: string
+          concepto_codigo: string
+          created_at: string
+          driver: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          anio: string
+          company_id: string
+          concepto_codigo: string
+          created_at?: string
+          driver?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          anio?: string
+          company_id?: string
+          concepto_codigo?: string
+          created_at?: string
+          driver?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allocation_rules_concepto_codigo_fkey"
+            columns: ["concepto_codigo"]
+            isOneToOne: false
+            referencedRelation: "catalog_pyg_concepts"
+            referencedColumns: ["concepto_codigo"]
+          },
+        ]
+      }
+      allocation_weights: {
+        Row: {
+          allocation_rule_id: string
+          created_at: string
+          id: string
+          mes: number
+          peso: number
+        }
+        Insert: {
+          allocation_rule_id: string
+          created_at?: string
+          id?: string
+          mes: number
+          peso: number
+        }
+        Update: {
+          allocation_rule_id?: string
+          created_at?: string
+          id?: string
+          mes?: number
+          peso?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allocation_weights_allocation_rule_id_fkey"
+            columns: ["allocation_rule_id"]
+            isOneToOne: false
+            referencedRelation: "allocation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           accion: string
@@ -229,6 +299,7 @@ export type Database = {
           concepto: string
           created_at: string
           id: string
+          is_allocated: boolean
           period_id: string
           valor: number | null
         }
@@ -237,6 +308,7 @@ export type Database = {
           concepto: string
           created_at?: string
           id?: string
+          is_allocated?: boolean
           period_id: string
           valor?: number | null
         }
@@ -245,6 +317,7 @@ export type Database = {
           concepto?: string
           created_at?: string
           id?: string
+          is_allocated?: boolean
           period_id?: string
           valor?: number | null
         }
@@ -520,6 +593,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      allocate_pyg: {
+        Args: { _company_id: string; _anio: string; _mode?: string }
+        Returns: {
+          concepto_codigo: string
+          total_anual: number
+          suma_mensual: number
+          diferencia: number
+          status: string
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
