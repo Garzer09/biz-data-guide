@@ -10,9 +10,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
-import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Info, Calculator, Eye, Play } from "lucide-react";
+import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Info, Calculator, Eye, Play, Clock, Target, Zap } from "lucide-react";
 
 interface InsightData {
   icon: React.ComponentType<{ className?: string }>;
@@ -596,6 +597,248 @@ export function CashflowPage() {
     );
   };
 
+  const getNOFMetrics = () => {
+    // Placeholder values - in real implementation these would come from NOF RPC
+    // These would be calculated from balance sheet data and sales/COGS figures
+    const ventasAnuales = 1200000; // Placeholder
+    const costoVentasAnual = 800000; // Placeholder
+    const inventarioPromedio = 150000; // Placeholder
+    const clientesPromedio = 200000; // Placeholder
+    const proveedoresPromedio = 120000; // Placeholder
+    
+    const diasInventario = Math.round((inventarioPromedio * 360) / costoVentasAnual);
+    const diasCobro = Math.round((clientesPromedio * 360) / ventasAnuales);
+    const diasPago = Math.round((proveedoresPromedio * 360) / costoVentasAnual);
+    const cicloConversion = diasInventario + diasCobro - diasPago;
+    
+    return {
+      diasInventario,
+      diasCobro,
+      diasPago,
+      cicloConversion,
+      // Additional metrics for different tabs
+      operativo: {
+        diasInventario,
+        diasCobro,
+        diasPago,
+        cicloConversion
+      },
+      inversion: {
+        rotacionActivos: Math.round(ventasAnuales / (inventarioPromedio + clientesPromedio)),
+        eficienciaCapital: Math.round((ventasAnuales / (inventarioPromedio + clientesPromedio)) * 100),
+        periodoRecuperacion: Math.round(cicloConversion / 12), // Months
+        rentabilidadOperativa: Math.round(((ventasAnuales - costoVentasAnual) / ventasAnuales) * 100)
+      },
+      financiacion: {
+        apalancamientoProveedores: Math.round((proveedoresPromedio / costoVentasAnual) * 360),
+        liquidezOperativa: Math.round(clientesPromedio / proveedoresPromedio),
+        presionLiquidez: Math.round((diasCobro + diasInventario) / diasPago),
+        margenSeguridad: Math.round(diasPago - (diasCobro + diasInventario))
+      }
+    };
+  };
+
+  const CashflowTabs = () => {
+    const nofMetrics = getNOFMetrics();
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Análisis Detallado por Componente
+          </CardTitle>
+          <CardDescription>
+            Métricas operativas, de inversión y financiación basadas en NOF
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="operativo" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="operativo">Operativo</TabsTrigger>
+              <TabsTrigger value="inversion">Inversión</TabsTrigger>
+              <TabsTrigger value="financiacion">Financiación</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="operativo" className="space-y-4 mt-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Días Inventario</div>
+                      <div className="text-2xl font-bold">{nofMetrics.operativo.diasInventario}</div>
+                      <div className="text-xs text-muted-foreground">días promedio</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Días Cobro</div>
+                      <div className="text-2xl font-bold">{nofMetrics.operativo.diasCobro}</div>
+                      <div className="text-xs text-muted-foreground">días promedio</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <TrendingDown className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Días Pago</div>
+                      <div className="text-2xl font-bold">{nofMetrics.operativo.diasPago}</div>
+                      <div className="text-xs text-muted-foreground">días promedio</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Zap className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Ciclo Conversión</div>
+                      <div className="text-2xl font-bold">{nofMetrics.operativo.cicloConversion}</div>
+                      <div className="text-xs text-muted-foreground">días total</div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm text-muted-foreground mb-2">Fórmula del Ciclo de Conversión:</div>
+                <div className="text-sm font-mono">
+                  {nofMetrics.operativo.diasInventario} (Inventario) + {nofMetrics.operativo.diasCobro} (Cobro) - {nofMetrics.operativo.diasPago} (Pago) = {nofMetrics.operativo.cicloConversion} días
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="inversion" className="space-y-4 mt-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-100 rounded-lg">
+                      <Target className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Rotación Activos</div>
+                      <div className="text-2xl font-bold">{nofMetrics.inversion.rotacionActivos}x</div>
+                      <div className="text-xs text-muted-foreground">veces por año</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-cyan-100 rounded-lg">
+                      <Calculator className="h-5 w-5 text-cyan-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Eficiencia Capital</div>
+                      <div className="text-2xl font-bold">{nofMetrics.inversion.eficienciaCapital}%</div>
+                      <div className="text-xs text-muted-foreground">uso eficiente</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-teal-100 rounded-lg">
+                      <Clock className="h-5 w-5 text-teal-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Período Recuperación</div>
+                      <div className="text-2xl font-bold">{nofMetrics.inversion.periodoRecuperacion}</div>
+                      <div className="text-xs text-muted-foreground">meses</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Rentabilidad Operativa</div>
+                      <div className="text-2xl font-bold">{nofMetrics.inversion.rentabilidadOperativa}%</div>
+                      <div className="text-xs text-muted-foreground">margen bruto</div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="financiacion" className="space-y-4 mt-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-rose-100 rounded-lg">
+                      <Building2 className="h-5 w-5 text-rose-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Apalancamiento Proveedores</div>
+                      <div className="text-2xl font-bold">{nofMetrics.financiacion.apalancamientoProveedores}</div>
+                      <div className="text-xs text-muted-foreground">días financiación</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <DollarSign className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Liquidez Operativa</div>
+                      <div className="text-2xl font-bold">{nofMetrics.financiacion.liquidezOperativa}x</div>
+                      <div className="text-xs text-muted-foreground">ratio cobertura</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Presión Liquidez</div>
+                      <div className="text-2xl font-bold">{nofMetrics.financiacion.presionLiquidez.toFixed(1)}x</div>
+                      <div className="text-xs text-muted-foreground">factor tensión</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Margen Seguridad</div>
+                      <div className="text-2xl font-bold">{nofMetrics.financiacion.margenSeguridad}</div>
+                      <div className="text-xs text-muted-foreground">días margen</div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const InsightsAutomaticos = ({ insights }: { insights: InsightData[] }) => {
     const getInsightColor = (type: InsightData['type']) => {
       switch (type) {
@@ -1101,6 +1344,9 @@ export function CashflowPage() {
 
       {/* Cashflow Simulator */}
       <CashflowSimulator />
+
+      {/* Cashflow Tabs */}
+      <CashflowTabs />
 
       {/* Insights Automáticos */}
       <InsightsAutomaticos insights={getInsightsAutomaticos()} />
