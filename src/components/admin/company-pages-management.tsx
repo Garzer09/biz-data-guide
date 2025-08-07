@@ -32,7 +32,11 @@ const availablePages = [
   { id: 'conclusiones', label: 'Conclusiones' }
 ];
 
-export function CompanyPagesManagement() {
+interface CompanyPagesManagementProps {
+  filterCompanyId?: string;
+}
+
+export function CompanyPagesManagement({ filterCompanyId }: CompanyPagesManagementProps) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [enabledPages, setEnabledPages] = useState<string[]>([]);
@@ -44,8 +48,12 @@ export function CompanyPagesManagement() {
   useEffect(() => {
     if (isAdmin) {
       fetchCompanies();
+      // Pre-select company if filtering by specific company
+      if (filterCompanyId) {
+        setSelectedCompanyId(filterCompanyId);
+      }
     }
-  }, [isAdmin]);
+  }, [isAdmin, filterCompanyId]);
 
   useEffect(() => {
     if (selectedCompanyId) {
@@ -55,11 +63,18 @@ export function CompanyPagesManagement() {
 
   const fetchCompanies = async () => {
     try {
-      const { data, error } = await supabase
+      let companiesQuery = supabase
         .from('companies')
         .select('id, name')
         .eq('estado', 'ACTIVO')
         .order('name');
+      
+      // Filter by specific company if provided
+      if (filterCompanyId) {
+        companiesQuery = companiesQuery.eq('id', filterCompanyId);
+      }
+
+      const { data, error } = await companiesQuery;
 
       if (error) throw error;
       setCompanies(data || []);
@@ -159,24 +174,26 @@ export function CompanyPagesManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Configuración de Páginas por Empresa</h2>
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Seleccionar Empresa</label>
-          <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-            <SelectTrigger className="w-full max-w-md">
-              <SelectValue placeholder="Selecciona una empresa" />
-            </SelectTrigger>
-            <SelectContent>
-              {companies.map((company) => (
-                <SelectItem key={company.id} value={company.id}>
-                  {company.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {!filterCompanyId && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Configuración de Páginas por Empresa</h2>
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">Seleccionar Empresa</label>
+            <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+              <SelectTrigger className="w-full max-w-md">
+                <SelectValue placeholder="Selecciona una empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
+      )}
 
       {selectedCompanyId && (
         <Card>
@@ -237,7 +254,7 @@ export function CompanyPagesManagement() {
         </Card>
       )}
 
-      {!selectedCompanyId && (
+      {!selectedCompanyId && !filterCompanyId && (
         <div className="text-center text-muted-foreground py-8">
           Selecciona una empresa para configurar sus páginas
         </div>

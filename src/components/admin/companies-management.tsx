@@ -9,8 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Edit, Trash2, Eye, ExternalLink } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Building2, Plus, Edit, ExternalLink, Settings, Upload, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CompanyPagesManagement } from "./company-pages-management";
+import { ImportDataManagement } from "./import-data-management";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Company {
   id: string;
@@ -26,6 +30,7 @@ export function CompaniesManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: "",
     cif_nif: "",
@@ -140,6 +145,16 @@ export function CompaniesManagement() {
     navigate(`/c/${companyId}/dashboard`);
   };
 
+  const toggleCompanyExpansion = (companyId: string) => {
+    const newExpanded = new Set(expandedCompanies);
+    if (newExpanded.has(companyId)) {
+      newExpanded.delete(companyId);
+    } else {
+      newExpanded.add(companyId);
+    }
+    setExpandedCompanies(newExpanded);
+  };
+
   if (!isAdmin) {
     return (
       <div className="text-center text-muted-foreground">
@@ -211,41 +226,105 @@ export function CompaniesManagement() {
 
       <div className="grid gap-4">
         {companies.map((company) => (
-          <Card key={company.id}>
-            <CardContent className="flex items-center justify-between p-6">
-              <div className="flex items-center gap-4">
-                <Building2 className="h-8 w-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold">{company.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    CIF/NIF: {company.cif_nif || "No especificado"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Creado: {new Date(company.creado_en).toLocaleDateString()}
-                  </p>
+          <Card key={company.id} className="overflow-hidden">
+            <CardContent className="p-0">
+              {/* Company Header */}
+              <div className="flex items-center justify-between p-6 border-b">
+                <div className="flex items-center gap-4 flex-1">
+                  <Building2 className="h-8 w-8 text-primary" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{company.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      CIF/NIF: {company.cif_nif || "No especificado"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Creado: {new Date(company.creado_en).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={company.estado === 'ACTIVO' ? 'default' : 'secondary'}>
+                    {company.estado}
+                  </Badge>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleAccessDashboard(company.id)}
+                    className="flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditModal(company)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleCompanyExpansion(company.id)}
+                    className="flex items-center gap-1"
+                  >
+                    {expandedCompanies.has(company.id) ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    Gestionar
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={company.estado === 'ACTIVO' ? 'default' : 'secondary'}>
-                  {company.estado}
-                </Badge>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => handleAccessDashboard(company.id)}
-                  className="flex items-center gap-1"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Dashboard
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openEditModal(company)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
+
+              {/* Expanded Content */}
+              <Collapsible open={expandedCompanies.has(company.id)}>
+                <CollapsibleContent>
+                  <div className="p-6 bg-muted/30">
+                    <Tabs defaultValue="pages" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="pages" className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Páginas
+                        </TabsTrigger>
+                        <TabsTrigger value="imports" className="flex items-center gap-2">
+                          <Upload className="h-4 w-4" />
+                          Importaciones
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="pages" className="mt-4">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base">Configuración de Páginas</CardTitle>
+                            <CardDescription>
+                              Activa o desactiva páginas específicas para {company.name}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <CompanyPagesManagement filterCompanyId={company.id} />
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="imports" className="mt-4">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base">Historial de Importaciones</CardTitle>
+                            <CardDescription>
+                              Importaciones de datos para {company.name}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <ImportDataManagement filterCompanyId={company.id} />
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
         ))}

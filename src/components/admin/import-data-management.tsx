@@ -35,7 +35,11 @@ const importTypes = [
   { value: 'company_profile', label: 'Perfil de Empresa' }
 ];
 
-export function ImportDataManagement() {
+interface ImportDataManagementProps {
+  filterCompanyId?: string;
+}
+
+export function ImportDataManagement({ filterCompanyId }: ImportDataManagementProps) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [importJobs, setImportJobs] = useState<ImportJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,16 +56,30 @@ export function ImportDataManagement() {
   useEffect(() => {
     if (isAdmin) {
       fetchData();
+      // Pre-select company if filtering by specific company
+      if (filterCompanyId) {
+        setSelectedCompanyId(filterCompanyId);
+      }
     }
-  }, [isAdmin]);
+  }, [isAdmin, filterCompanyId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       
-      // Fetch companies based on admin status
+      // Fetch companies based on filter or admin status
       let companiesData;
-      if (isAdmin) {
+      if (filterCompanyId) {
+        // If filtering by specific company, only fetch that company
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('id', filterCompanyId)
+          .eq('estado', 'ACTIVO');
+        
+        if (error) throw error;
+        companiesData = data;
+      } else if (isAdmin) {
         // Admin can see all companies
         const { data, error } = await supabase
           .from('companies')
@@ -94,7 +112,7 @@ export function ImportDataManagement() {
       }
 
       // Fetch import jobs with company info
-      const { data: jobsData, error: jobsError } = await supabase
+      let jobsQuery = supabase
         .from('import_jobs')
         .select(`
           id,
@@ -109,6 +127,13 @@ export function ImportDataManagement() {
         `)
         .order('creado_en', { ascending: false })
         .limit(50);
+      
+      // Filter jobs by company if specified
+      if (filterCompanyId) {
+        jobsQuery = jobsQuery.eq('company_id', filterCompanyId);
+      }
+
+      const { data: jobsData, error: jobsError } = await jobsQuery;
 
       if (jobsError) throw jobsError;
 
@@ -288,14 +313,18 @@ export function ImportDataManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Gestión de Importaciones</h2>
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Cargar Datos
-            </Button>
-          </DialogTrigger>
+        <h2 className="text-xl font-semibold">
+          {filterCompanyId ? "Importaciones de la Empresa" : "Gestión de Importaciones"}
+        </h2>
+        {/* Only show upload button if we have companies to select from */}
+        {companies.length > 0 && (
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Cargar Datos
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Cargar Datos Financieros</DialogTitle>
@@ -303,10 +332,14 @@ export function ImportDataManagement() {
                 Selecciona la empresa, tipo de datos y archivo a procesar
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="company">Empresa</Label>
-                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="company">Empresa</Label>
+                  <Select 
+                    value={selectedCompanyId} 
+                    onValueChange={setSelectedCompanyId}
+                    disabled={!!filterCompanyId} // Disable if filtering by specific company
+                  >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una empresa" />
                   </SelectTrigger>
@@ -366,8 +399,9 @@ export function ImportDataManagement() {
                 {processing ? "Subiendo..." : "Subir Archivo"}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Card>
