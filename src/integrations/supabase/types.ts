@@ -1306,6 +1306,13 @@ export type Database = {
           anio: string
         }[]
       }
+      get_cashflow_financiacion: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          periodo: string
+          flujo_financiacion: number
+        }[]
+      }
       get_cashflow_inversion: {
         Args: { _company_id: string; _anio: string }
         Returns: {
