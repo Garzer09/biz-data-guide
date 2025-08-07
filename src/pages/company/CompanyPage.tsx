@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { PyGPage } from "./PyGPage";
+import { CompanyProfilePage } from "./CompanyProfilePage";
 
 export function CompanyPage() {
   const { companyId, page } = useParams();
@@ -8,6 +9,8 @@ export function CompanyPage() {
     switch (page) {
       case 'pyg':
         return <PyGPage />;
+      case 'empresa':
+        return <CompanyProfilePage />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
@@ -23,6 +26,8 @@ export function CompanyPage() {
         return 'Dashboard Principal';
       case 'pyg':
         return 'Cuenta P&G';
+      case 'empresa':
+        return 'Perfil de Empresa';
       case 'balance':
         return 'Balance';
       case 'cashflow':

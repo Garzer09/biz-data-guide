@@ -209,6 +209,50 @@ export type Database = {
           },
         ]
       }
+      company_profile: {
+        Row: {
+          company_id: string
+          created_at: string
+          descripcion: string | null
+          empleados: number | null
+          industria: string | null
+          sector: string | null
+          sede_principal: string | null
+          updated_at: string
+          web: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          descripcion?: string | null
+          empleados?: number | null
+          industria?: string | null
+          sector?: string | null
+          sede_principal?: string | null
+          updated_at?: string
+          web?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          descripcion?: string | null
+          empleados?: number | null
+          industria?: string | null
+          sector?: string | null
+          sede_principal?: string | null
+          updated_at?: string
+          web?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_profile_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fs_balance: {
         Row: {
           company_id: string
