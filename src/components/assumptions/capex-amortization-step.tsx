@@ -1,8 +1,8 @@
 import React from 'react';
-import { FinancialAssumptions } from '@/hooks/use-assumptions';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { FinancialAssumptions } from '@/hooks/use-assumptions';
 
 interface CapexAmortizationStepProps {
   assumptions: FinancialAssumptions;
@@ -12,11 +12,11 @@ interface CapexAmortizationStepProps {
 export function CapexAmortizationStep({ assumptions, onUpdate }: CapexAmortizationStepProps) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6">
-          <div className="space-y-4">
-            <Label className="text-base font-medium">CAPEX (% sobre ventas)</Label>
-            <div className="space-y-3">
+          <div>
+            <Label>CAPEX (% sobre ingresos)</Label>
+            <div className="mt-2">
               <Slider
                 value={[assumptions.capex_as_percentage]}
                 onValueChange={(value) => onUpdate({ capex_as_percentage: value[0] })}
@@ -25,22 +25,22 @@ export function CapexAmortizationStep({ assumptions, onUpdate }: CapexAmortizati
                 step={0.1}
                 className="w-full"
               />
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="flex justify-between text-sm text-muted-foreground mt-1">
                 <span>0%</span>
-                <span className="text-foreground font-medium">{assumptions.capex_as_percentage.toFixed(1)}%</span>
+                <span className="font-medium">{assumptions.capex_as_percentage.toFixed(1)}%</span>
                 <span>20%</span>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Inversión anual en activos fijos como % de ventas
+            <p className="text-sm text-muted-foreground mt-2">
+              Inversión en activos fijos como porcentaje de las ventas
             </p>
           </div>
         </Card>
 
         <Card className="p-6">
-          <div className="space-y-4">
-            <Label className="text-base font-medium">Tasa de Depreciación (%)</Label>
-            <div className="space-y-3">
+          <div>
+            <Label>Tasa de Depreciación (%)</Label>
+            <div className="mt-2">
               <Slider
                 value={[assumptions.depreciation_rate]}
                 onValueChange={(value) => onUpdate({ depreciation_rate: value[0] })}
@@ -49,36 +49,51 @@ export function CapexAmortizationStep({ assumptions, onUpdate }: CapexAmortizati
                 step={0.1}
                 className="w-full"
               />
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="flex justify-between text-sm text-muted-foreground mt-1">
                 <span>0%</span>
-                <span className="text-foreground font-medium">{assumptions.depreciation_rate.toFixed(1)}%</span>
+                <span className="font-medium">{assumptions.depreciation_rate.toFixed(1)}%</span>
                 <span>25%</span>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Depreciación anual sobre el valor de activos fijos
+            <p className="text-sm text-muted-foreground mt-2">
+              Depreciación anual sobre el valor de los activos fijos
             </p>
           </div>
         </Card>
       </div>
 
-      <Card className="p-6 bg-accent/50">
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-foreground text-center">Impacto en Flujo de Caja</h4>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <p className="text-sm text-muted-foreground">CAPEX Anual</p>
-              <p className="text-xl font-bold text-destructive">-{assumptions.capex_as_percentage.toFixed(1)}%</p>
+      <Card className="p-6">
+        <h4 className="font-medium mb-4">Análisis de Inversión</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <div className="text-lg font-bold text-primary">
+              {(100 / assumptions.depreciation_rate || 0).toFixed(1)}
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Depreciación</p>
-              <p className="text-xl font-bold text-success">+{assumptions.depreciation_rate.toFixed(1)}%</p>
-            </div>
+            <div className="text-sm text-muted-foreground">Vida Útil (años)</div>
           </div>
-          <p className="text-sm text-muted-foreground text-center">
-            Sobre la base de ventas anuales
-          </p>
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <div className="text-lg font-bold text-secondary">
+              {assumptions.capex_as_percentage.toFixed(1)}%
+            </div>
+            <div className="text-sm text-muted-foreground">Intensidad CAPEX</div>
+          </div>
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <div className="text-lg font-bold text-accent">
+              {(assumptions.capex_as_percentage / assumptions.depreciation_rate || 0).toFixed(1)}x
+            </div>
+            <div className="text-sm text-muted-foreground">Ratio CAPEX/Depreciación</div>
+          </div>
         </div>
+      </Card>
+
+      <Card className="p-6 bg-muted/50">
+        <h4 className="font-medium mb-3">Consideraciones para CAPEX y Amortización</h4>
+        <ul className="text-sm text-muted-foreground space-y-1">
+          <li>• Un ratio CAPEX/Depreciación &gt; 1 indica crecimiento de activos</li>
+          <li>• La intensidad CAPEX varía según el sector (industrial vs servicios)</li>
+          <li>• La vida útil debe reflejar la realidad tecnológica del sector</li>
+          <li>• CAPEX de mantenimiento vs CAPEX de crecimiento</li>
+        </ul>
       </Card>
     </div>
   );

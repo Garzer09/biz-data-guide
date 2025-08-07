@@ -70,7 +70,7 @@ export function useAssumptions(companyId: string) {
     try {
       const { data, error: fetchError } = await supabase
         .from('financial_assumptions')
-        .select('sales_growth, average_price, product_mix, cogs, opex_growth, staff_costs, days_receivable, days_payable, days_inventory, debt_equity_ratio, cost_of_debt, cost_of_equity, capex_as_percentage, depreciation_rate, tax_rate, other_assumptions')
+        .select('*')
         .eq('company_id', companyId)
         .maybeSingle();
 
@@ -103,6 +103,7 @@ export function useAssumptions(companyId: string) {
         .upsert({
           company_id: companyId,
           ...assumptions,
+          updated_at: new Date().toISOString(),
         });
 
       if (saveError) {

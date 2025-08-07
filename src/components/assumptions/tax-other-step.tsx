@@ -1,9 +1,9 @@
 import React from 'react';
-import { FinancialAssumptions } from '@/hooks/use-assumptions';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { FinancialAssumptions } from '@/hooks/use-assumptions';
 
 interface TaxOtherStepProps {
   assumptions: FinancialAssumptions;
@@ -13,73 +13,73 @@ interface TaxOtherStepProps {
 export function TaxOtherStep({ assumptions, onUpdate }: TaxOtherStepProps) {
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <div className="space-y-4">
-          <Label className="text-base font-medium">Tasa Impositiva (%)</Label>
-          <div className="space-y-3">
-            <Slider
-              value={[assumptions.tax_rate]}
-              onValueChange={(value) => onUpdate({ tax_rate: value[0] })}
-              max={50}
-              min={0}
-              step={0.1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>0%</span>
-              <span className="text-foreground font-medium">{assumptions.tax_rate.toFixed(1)}%</span>
-              <span>50%</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <div>
+            <Label>Tasa Impositiva (%)</Label>
+            <div className="mt-2">
+              <Slider
+                value={[assumptions.tax_rate]}
+                onValueChange={(value) => onUpdate({ tax_rate: value[0] })}
+                max={35}
+                min={15}
+                step={0.1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-sm text-muted-foreground mt-1">
+                <span>15%</span>
+                <span className="font-medium">{assumptions.tax_rate.toFixed(1)}%</span>
+                <span>35%</span>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Tipo efectivo del Impuesto sobre Sociedades
+            </p>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <h4 className="font-medium mb-3">Tipos de Referencia</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>España (general):</span>
+                <span className="font-medium">25%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>España (PYME):</span>
+                <span className="font-medium">23%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Startups (2 años):</span>
+                <span className="font-medium">15%</span>
+              </div>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Tipo impositivo efectivo sobre beneficios
-          </p>
-        </div>
-      </Card>
+        </Card>
+      </div>
 
       <Card className="p-6">
-        <div className="space-y-4">
-          <Label htmlFor="other-assumptions" className="text-base font-medium">
-            Otros Supuestos y Consideraciones
-          </Label>
+        <div>
+          <Label htmlFor="other-assumptions">Otros Supuestos</Label>
           <Textarea
             id="other-assumptions"
             value={assumptions.other_assumptions}
             onChange={(e) => onUpdate({ other_assumptions: e.target.value })}
-            placeholder="Incluya aquí cualquier otro supuesto relevante: estacionalidad, regulaciones, factores macroeconómicos, etc."
-            rows={6}
-            className="resize-none"
+            placeholder="Incluya otros supuestos relevantes para las proyecciones: inflación, tipos de cambio, regulaciones específicas, etc."
+            className="mt-2 min-h-[120px]"
           />
-          <p className="text-sm text-muted-foreground">
-            Describe cualquier consideración adicional que pueda afectar las proyecciones financieras
-          </p>
         </div>
       </Card>
 
-      <Card className="p-6 bg-accent/50">
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-foreground text-center">Resumen de Supuestos</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-sm text-muted-foreground">Crecimiento</p>
-              <p className="text-lg font-bold text-primary">{assumptions.sales_growth.toFixed(1)}%</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Margen Bruto</p>
-              <p className="text-lg font-bold text-primary">{(100 - assumptions.cogs).toFixed(1)}%</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Ciclo Efectivo</p>
-              <p className="text-lg font-bold text-primary">
-                {assumptions.days_receivable + assumptions.days_inventory - assumptions.days_payable}d
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Impuestos</p>
-              <p className="text-lg font-bold text-primary">{assumptions.tax_rate.toFixed(1)}%</p>
-            </div>
-          </div>
-        </div>
+      <Card className="p-6 bg-muted/50">
+        <h4 className="font-medium mb-3">Consideraciones Adicionales</h4>
+        <ul className="text-sm text-muted-foreground space-y-1">
+          <li>• El tipo efectivo puede diferir del nominal por deducciones</li>
+          <li>• Considerar beneficios fiscales aplicables (I+D, inversiones, etc.)</li>
+          <li>• Incluir supuestos macroeconómicos relevantes</li>
+          <li>• Documentar cualquier estacionalidad o ciclos específicos</li>
+        </ul>
       </Card>
     </div>
   );
