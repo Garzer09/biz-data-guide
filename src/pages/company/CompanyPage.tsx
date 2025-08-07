@@ -1,6 +1,5 @@
 import { useParams } from "react-router-dom";
 import { PyGPage } from "./PyGPage";
-import { CompanyProfilePage } from "./CompanyProfilePage";
 import { CompanyProfileFormPage } from "./CompanyProfileFormPage";
 import { BalancePage } from "./BalancePage";
 
@@ -12,7 +11,7 @@ export function CompanyPage() {
       case 'pyg':
         return <PyGPage />;
       case 'empresa':
-        return <CompanyProfilePage />;
+        return <CompanyProfileFormPage />;
       case 'profile':
         return <CompanyProfileFormPage />;
       case 'balance':
