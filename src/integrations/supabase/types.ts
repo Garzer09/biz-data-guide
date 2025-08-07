@@ -1327,6 +1327,12 @@ export type Database = {
           flujo_operativo: number
         }[]
       }
+      get_cashflow_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
       get_company_profile: {
         Args: { _company_id: string }
         Returns: {
