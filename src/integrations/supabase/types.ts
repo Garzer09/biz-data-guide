@@ -1250,6 +1250,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_nof_summary: {
+        Row: {
+          anticipos_clientes: number | null
+          clientes: number | null
+          company_id: string | null
+          dias_ciclo: number | null
+          inventario: number | null
+          nof_total: number | null
+          otros_acreedores: number | null
+          otros_deudores: number | null
+          periodo: string | null
+          proveedores: number | null
+          trabajos_en_curso: number | null
+        }
+        Insert: {
+          anticipos_clientes?: never
+          clientes?: never
+          company_id?: string | null
+          dias_ciclo?: never
+          inventario?: never
+          nof_total?: never
+          otros_acreedores?: never
+          otros_deudores?: never
+          periodo?: string | null
+          proveedores?: never
+          trabajos_en_curso?: never
+        }
+        Update: {
+          anticipos_clientes?: never
+          clientes?: never
+          company_id?: string | null
+          dias_ciclo?: never
+          inventario?: never
+          nof_total?: never
+          otros_acreedores?: never
+          otros_deudores?: never
+          periodo?: string | null
+          proveedores?: never
+          trabajos_en_curso?: never
+        }
+        Relationships: []
+      }
       vw_punto_muerto: {
         Row: {
           company_id: string | null
@@ -1553,6 +1595,35 @@ export type Database = {
       get_margen_seguridad_valor: {
         Args: { _company_id: string; _anio: string }
         Returns: number
+      }
+      get_nof_components: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          componente: string
+          valor: number
+        }[]
+      }
+      get_nof_days_cycle: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_nof_ratios: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          ratio_name: string
+          ratio_value: number
+          interpretation: string
+        }[]
+      }
+      get_nof_total: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_nof_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
       }
       get_punto_equilibrio_valor: {
         Args: { _company_id: string; _anio: string }
