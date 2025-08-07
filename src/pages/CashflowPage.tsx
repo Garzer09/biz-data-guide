@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MetricCard } from "@/components/ui/metric-card";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
-import { Download, Plus, DollarSign, Building2, AlertCircle } from "lucide-react";
+import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge } from "lucide-react";
 
 interface CashflowData {
   periodo: string;
@@ -299,6 +300,39 @@ export function CashflowPage() {
       { name: 'Dividendos', value: dividendos, color: '#ec4899' },
       { name: 'Incremento Tesorería', value: incrementoTesoreria, color: '#06b6d4' }
     ].filter(item => item.value > 0); // Only show positive values
+  };
+
+  const getGaugeMetrics = () => {
+    const sums = calculateSums();
+    const fco = Math.max(0, sums.operativo);
+    
+    // Placeholder values - in real implementation these would come from additional data sources
+    const qualityFco = 72; // Placeholder value between 0-100
+    const inversiones = Math.abs(Math.min(0, sums.inversion)) || 1; // Avoid division by zero
+    const servicioDeuda = 45000; // Placeholder for debt service
+    
+    const autofinanciacion = fco / inversiones;
+    const coberturaDeuda = fco / servicioDeuda;
+    
+    return {
+      qualityFco,
+      autofinanciacion,
+      coberturaDeuda,
+      fco
+    };
+  };
+
+  const getGaugeColor = (value: number, ranges: { red: [number, number], yellow: [number, number], green: [number, number] }) => {
+    if (value >= ranges.red[0] && value < ranges.red[1]) return 'hsl(var(--destructive))';
+    if (value >= ranges.yellow[0] && value < ranges.yellow[1]) return 'hsl(45, 93%, 47%)'; // Yellow
+    if (value >= ranges.green[0]) return 'hsl(var(--success))';
+    return 'hsl(var(--muted))';
+  };
+
+  const getGaugeColorByThreshold = (value: number, redMax: number, yellowMax: number) => {
+    if (value < redMax) return 'hsl(var(--destructive))';
+    if (value < yellowMax) return 'hsl(45, 93%, 47%)'; // Yellow
+    return 'hsl(var(--success))';
   };
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -631,6 +665,119 @@ export function CashflowPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Gauge Metrics */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {isLoading ? (
+          <>
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+          </>
+        ) : (
+          <>
+            {/* Calidad FCO */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Gauge className="h-5 w-5" />
+                  Calidad FCO
+                </CardTitle>
+                <CardDescription>Indicador de calidad del flujo operativo</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold" style={{ color: getGaugeColor(getGaugeMetrics().qualityFco, { red: [0, 50], yellow: [50, 75], green: [75, 100] }) }}>
+                      {getGaugeMetrics().qualityFco}
+                    </div>
+                    <div className="text-sm text-muted-foreground">sobre 100</div>
+                  </div>
+                  <Progress 
+                    value={getGaugeMetrics().qualityFco} 
+                    className="h-2"
+                    style={{ 
+                      '--progress-background': getGaugeColor(getGaugeMetrics().qualityFco, { red: [0, 50], yellow: [50, 75], green: [75, 100] })
+                    } as React.CSSProperties}
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0</span>
+                    <span className="text-destructive">50</span>
+                    <span className="text-yellow-600">75</span>
+                    <span className="text-success">100</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Autofinanciación */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Gauge className="h-5 w-5" />
+                  Autofinanciación
+                </CardTitle>
+                <CardDescription>FCO / Inversiones</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold" style={{ color: getGaugeColorByThreshold(getGaugeMetrics().autofinanciacion, 1, 2) }}>
+                      {getGaugeMetrics().autofinanciacion.toFixed(2)}x
+                    </div>
+                    <div className="text-sm text-muted-foreground">ratio de cobertura</div>
+                  </div>
+                  <Progress 
+                    value={Math.min(100, (getGaugeMetrics().autofinanciacion / 3) * 100)} 
+                    className="h-2"
+                    style={{ 
+                      '--progress-background': getGaugeColorByThreshold(getGaugeMetrics().autofinanciacion, 1, 2)
+                    } as React.CSSProperties}
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span className="text-destructive">&lt;1</span>
+                    <span className="text-yellow-600">1-2</span>
+                    <span className="text-success">&gt;2</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cobertura Deuda */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Gauge className="h-5 w-5" />
+                  Cobertura Deuda
+                </CardTitle>
+                <CardDescription>FCO / Servicio de Deuda</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold" style={{ color: getGaugeColorByThreshold(getGaugeMetrics().coberturaDeuda, 1.5, 3) }}>
+                      {getGaugeMetrics().coberturaDeuda.toFixed(2)}x
+                    </div>
+                    <div className="text-sm text-muted-foreground">ratio de cobertura</div>
+                  </div>
+                  <Progress 
+                    value={Math.min(100, (getGaugeMetrics().coberturaDeuda / 5) * 100)} 
+                    className="h-2"
+                    style={{ 
+                      '--progress-background': getGaugeColorByThreshold(getGaugeMetrics().coberturaDeuda, 1.5, 3)
+                    } as React.CSSProperties}
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span className="text-destructive">&lt;1.5</span>
+                    <span className="text-yellow-600">1.5-3</span>
+                    <span className="text-success">&gt;3</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Content */}
