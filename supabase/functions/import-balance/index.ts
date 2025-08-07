@@ -34,11 +34,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
     // Get authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -48,11 +43,24 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Set auth for the client
-    supabase.auth.setAuth(authHeader.replace('Bearer ', ''))
+    // Initialize Supabase client with authorization
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    
+    // Create client with service role for database operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
+    
+    // Create client with user token for auth verification
+    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    })
 
-    // Verify admin role
-    const { data: isAdmin, error: roleError } = await supabase.rpc('is_current_user_admin')
+    // Verify admin role using user client
+    const { data: isAdmin, error: roleError } = await supabaseUser.rpc('is_current_user_admin')
     if (roleError || !isAdmin) {
       console.error('Role verification failed:', roleError)
       return new Response(
@@ -80,7 +88,7 @@ Deno.serve(async (req) => {
     console.log(`Processing balance import for job_id: ${job_id}, tipo: ${tipo}`)
 
     // Get job details
-    const { data: job, error: jobError } = await supabase
+    const { data: job, error: jobError } = await supabaseAdmin
       .from('import_jobs')
       .select('company_id, storage_path, tipo')
       .eq('id', job_id)
@@ -95,13 +103,13 @@ Deno.serve(async (req) => {
     }
 
     // Download file from storage
-    const { data: fileData, error: downloadError } = await supabase.storage
+    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
       .from('import-files')
       .download(job.storage_path)
 
     if (downloadError || !fileData) {
       console.error('File download failed:', downloadError)
-      await supabase
+      await supabaseAdmin
         .from('import_jobs')
         .update({
           estado: 'failed',
@@ -143,7 +151,7 @@ Deno.serve(async (req) => {
       }
     } catch (parseError) {
       console.error('File parsing failed:', parseError)
-      await supabase
+      await supabaseAdmin
         .from('import_jobs')
         .update({
           estado: 'failed',
@@ -158,11 +166,11 @@ Deno.serve(async (req) => {
     }
 
     // Validate and process data
-    const result = await processBalanceData(supabase, rows, job.company_id, tipo)
+    const result = await processBalanceData(supabaseAdmin, rows, job.company_id, tipo)
 
     // Update job status
     const jobStatus = result.error_rows === 0 ? 'done' : 'failed'
-    await supabase
+    await supabaseAdmin
       .from('import_jobs')
       .update({
         estado: jobStatus,
