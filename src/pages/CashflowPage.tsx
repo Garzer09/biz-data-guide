@@ -9,9 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
-import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Info, Calculator, Eye, Play } from "lucide-react";
 
 interface InsightData {
   icon: React.ComponentType<{ className?: string }>;
@@ -42,6 +43,11 @@ export function CashflowPage() {
   const [cashflowInversion, setCashflowInversion] = useState<CashflowData[]>([]);
   const [cashflowFinanciacion, setCashflowFinanciacion] = useState<CashflowData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // Simulator state
+  const [deltaCobro, setDeltaCobro] = useState([0]);
+  const [deltaPago, setDeltaPago] = useState([0]);
+  const [deltaInventario, setDeltaInventario] = useState([0]);
 
   // Check access and load initial data
   useEffect(() => {
@@ -416,6 +422,178 @@ export function CashflowPage() {
     }
 
     return insights;
+  };
+
+  const CashflowSimulator = () => {
+    // Placeholder values - in real implementation these would come from P&G data
+    const ventasAnuales = 1200000; // Placeholder annual sales
+    const costoVentasAnual = 800000; // Placeholder annual cost of sales
+    const inventarioActual = 150000; // Placeholder current inventory
+    const flujoOperativoBase = calculateSums().operativo;
+
+    const calculateImpact = () => {
+      const impactoCobro = (ventasAnuales / 360) * deltaCobro[0];
+      const impactoPago = (costoVentasAnual / 360) * deltaPago[0];
+      const impactoInventario = deltaInventario[0] * inventarioActual / 100; // Assuming percentage change
+      
+      const impactoTotal = flujoOperativoBase + impactoCobro - impactoPago + impactoInventario;
+      
+      return {
+        impactoCobro,
+        impactoPago,
+        impactoInventario,
+        impactoTotal,
+        diferencia: impactoTotal - flujoOperativoBase
+      };
+    };
+
+    const impacto = calculateImpact();
+
+    const handleVerDetalle = () => {
+      toast({
+        title: "Detalle del Escenario",
+        description: "Funcionalidad de detalle en desarrollo",
+      });
+    };
+
+    const handleAplicarEscenario = () => {
+      toast({
+        title: "Aplicar Escenario",
+        description: "Escenario aplicado para análisis futuro",
+      });
+    };
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            Simulador de Flujo de Caja
+          </CardTitle>
+          <CardDescription>
+            Analiza el impacto de cambios en políticas de cobro, pago e inventario
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Sliders */}
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <label className="text-sm font-medium">Delta Cobro (días)</label>
+                <span className="text-sm text-muted-foreground">{deltaCobro[0]} días</span>
+              </div>
+              <Slider
+                value={deltaCobro}
+                onValueChange={setDeltaCobro}
+                max={30}
+                min={-30}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>-30</span>
+                <span>0</span>
+                <span>+30</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <label className="text-sm font-medium">Delta Pago (días)</label>
+                <span className="text-sm text-muted-foreground">{deltaPago[0]} días</span>
+              </div>
+              <Slider
+                value={deltaPago}
+                onValueChange={setDeltaPago}
+                max={30}
+                min={-30}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>-30</span>
+                <span>0</span>
+                <span>+30</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <label className="text-sm font-medium">Delta Inventario (%)</label>
+                <span className="text-sm text-muted-foreground">{deltaInventario[0]}%</span>
+              </div>
+              <Slider
+                value={deltaInventario}
+                onValueChange={setDeltaInventario}
+                max={50}
+                min={-50}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>-50%</span>
+                <span>0%</span>
+                <span>+50%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Results */}
+          <div className="border-t pt-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm text-muted-foreground">FCO Base</div>
+                <div className="text-xl font-bold">€{flujoOperativoBase.toLocaleString()}</div>
+              </div>
+              
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm text-muted-foreground">Impacto Cobro</div>
+                <div className={`text-xl font-bold ${impacto.impactoCobro >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  €{impacto.impactoCobro.toLocaleString()}
+                </div>
+              </div>
+              
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm text-muted-foreground">Impacto Pago</div>
+                <div className={`text-xl font-bold ${impacto.impactoPago >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  €{(-impacto.impactoPago).toLocaleString()}
+                </div>
+              </div>
+              
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-sm text-muted-foreground">Impacto Inventario</div>
+                <div className={`text-xl font-bold ${impacto.impactoInventario >= 0 ? 'text-destructive' : 'text-success'}`}>
+                  €{impacto.impactoInventario.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-6 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground mb-2">Nuevo FCO Proyectado</div>
+                <div className={`text-3xl font-bold ${impacto.impactoTotal >= flujoOperativoBase ? 'text-success' : 'text-destructive'}`}>
+                  €{impacto.impactoTotal.toLocaleString()}
+                </div>
+                <div className={`text-lg ${impacto.diferencia >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {impacto.diferencia >= 0 ? '+' : ''}€{impacto.diferencia.toLocaleString()} vs base
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6 justify-center">
+              <Button onClick={handleVerDetalle} variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                Ver detalle
+              </Button>
+              <Button onClick={handleAplicarEscenario} variant="default" size="sm">
+                <Play className="h-4 w-4 mr-2" />
+                Aplicar escenario
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   const InsightsAutomaticos = ({ insights }: { insights: InsightData[] }) => {
@@ -920,6 +1098,9 @@ export function CashflowPage() {
           </>
         )}
       </div>
+
+      {/* Cashflow Simulator */}
+      <CashflowSimulator />
 
       {/* Insights Automáticos */}
       <InsightsAutomaticos insights={getInsightsAutomaticos()} />
