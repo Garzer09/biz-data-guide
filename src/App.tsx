@@ -6,6 +6,8 @@ import { AdminPage } from './pages/AdminPage';
 import { CompanySelector } from './pages/CompanySelector';
 import { CompanyDashboard } from './pages/company/CompanyDashboard';
 import { PyGPage } from './pages/company/PyGPage';
+import { PyGAnalyticPage } from './pages/company/PyGAnalyticPage';
+import { SalesSegmentsPage } from './pages/company/SalesSegmentsPage';
 import { CashflowPage } from './pages/CashflowPage';
 import { RatiosPage } from './pages/RatiosPage';
 import { BreakevenPage } from './pages/BreakevenPage';
@@ -125,6 +127,24 @@ function App() {
             element={
               <AppLayout>
                 <DebtPoolPage />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/pyg_analytic" 
+            element={
+              <AppLayout>
+                <PyGAnalyticPage />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/sales-segments" 
+            element={
+              <AppLayout>
+                <SalesSegmentsPage />
               </AppLayout>
             } 
           />
