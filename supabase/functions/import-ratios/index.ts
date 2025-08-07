@@ -35,19 +35,45 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    console.log('Environment check:', { 
+      hasUrl: !!supabaseUrl, 
+      hasServiceKey: !!supabaseServiceKey,
+      authHeader: !!authHeader 
+    });
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    });
+    
+    
+    // Create a user client for RPC verification
+    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    })
     
     // Verify admin role
-    const { data: isAdmin, error: roleError } = await supabase.rpc('is_current_user_admin')
+    const { data: isAdmin, error: roleError } = await supabaseUser.rpc('is_current_user_admin')
     if (roleError || !isAdmin) {
-      console.error('Role verification failed:', roleError)
+      console.error('Role verification failed:', { roleError, isAdmin })
       return new Response(
-        JSON.stringify({ error: 'Access denied. Admin role required.' }),
+        JSON.stringify({ error: 'Access denied. Admin role required.', details: roleError?.message }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const { job_id } = await req.json()
+    console.log('Admin verification successful')
+
+    const requestBody = await req.json()
+    console.log('Request body:', requestBody)
+    const { job_id } = requestBody
 
     if (!job_id) {
       return new Response(

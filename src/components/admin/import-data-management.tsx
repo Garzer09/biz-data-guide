@@ -258,6 +258,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       } else if (job?.tipo === 'ratios') {
         functionName = 'import-ratios';
         functionBody = { job_id: jobId };
+        console.log('Calling import-ratios function with:', functionBody);
       }
         
       const { data, error } = await supabase.functions.invoke(functionName, {
