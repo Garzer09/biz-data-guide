@@ -5,6 +5,7 @@ import { AppLayout } from './components/layout/app-layout';
 import { AdminPage } from './pages/AdminPage';
 import { CompanySelector } from './pages/CompanySelector';
 import { CompanyDashboard } from './pages/company/CompanyDashboard';
+import { PyGPage } from './pages/company/PyGPage';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -55,6 +56,15 @@ function App() {
             element={
               <AppLayout>
                 <CompanyDashboard />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/pyg" 
+            element={
+              <AppLayout>
+                <PyGPage />
               </AppLayout>
             } 
           />
