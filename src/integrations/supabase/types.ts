@@ -1065,6 +1065,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      upsert_company_profile: {
+        Args: {
+          _company_id: string
+          _sector: string
+          _industria: string
+          _año_fundacion: number
+          _empleados: number
+          _ingresos_anuales: number
+          _sede: string
+          _sitio_web: string
+          _descripcion: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
