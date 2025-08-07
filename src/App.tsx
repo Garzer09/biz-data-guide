@@ -7,6 +7,7 @@ import { CompanySelector } from './pages/CompanySelector';
 import { CompanyDashboard } from './pages/company/CompanyDashboard';
 import { PyGPage } from './pages/company/PyGPage';
 import { CashflowPage } from './pages/CashflowPage';
+import { RatiosPage } from './pages/RatiosPage';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -75,6 +76,15 @@ function App() {
             element={
               <AppLayout>
                 <CashflowPage />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/ratios" 
+            element={
+              <AppLayout>
+                <RatiosPage />
               </AppLayout>
             } 
           />
