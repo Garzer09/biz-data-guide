@@ -342,7 +342,13 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
   };
 
   const getTypeLabel = (tipo: string) => {
-    return importTypes.find(t => t.value === tipo)?.label || tipo;
+    const typeMap: Record<string, string> = {
+      'pyg_anual': 'P&G Anual',
+      'company_profile': 'Perfil de Empresa',
+      'balance_operativo': 'Balance Operativo',
+      'balance_financiero': 'Balance Financiero'
+    };
+    return typeMap[tipo] || tipo;
   };
 
   const downloadTemplate = (type?: string) => {
