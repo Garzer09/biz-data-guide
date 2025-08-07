@@ -24,7 +24,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { job_id, scenario = 'base' } = await req.json();
+    const requestBody = await req.json();
+    const { job_id, scenario = 'base' } = requestBody;
+    
+    // Security: Validate request body
+    if (!requestBody || typeof requestBody !== 'object') {
+      throw new Error('Invalid request body');
+    }
+    
+    // Security: Validate scenario parameter
+    if (typeof scenario !== 'string' || scenario.length > 50) {
+      throw new Error('Invalid scenario parameter');
+    }
+    
     console.log('Processing debt import job:', job_id, 'for scenario:', scenario);
 
     if (!job_id) {
@@ -57,12 +69,22 @@ serve(async (req) => {
       throw new Error(`Failed to download file: ${downloadError?.message}`);
     }
 
-    // Parse CSV content
+    // Parse CSV content with security validation
     const csvText = await fileData.text();
+    
+    // Security: Validate file size (10MB limit)
+    if (csvText.length > 10 * 1024 * 1024) {
+      throw new Error('File too large. Maximum size is 10MB');
+    }
+    
     const lines = csvText.trim().split('\n');
     
     if (lines.length < 2) {
       throw new Error('CSV file must have at least header and one data row');
+    }
+    
+    if (lines.length > 10000) {
+      throw new Error('Too many rows. Maximum is 10,000 rows');
     }
 
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
@@ -97,18 +119,23 @@ serve(async (req) => {
           rowData[header] = values[index];
         });
 
-        // Validate and convert data types
+        // Security: Validate and convert data types with sanitization
         const debtData = {
           company_id: jobData.company_id,
-          entidad: rowData.entidad,
-          tipo: rowData.tipo,
+          entidad: String(rowData.entidad || '').substring(0, 255), // Limit string length
+          tipo: String(rowData.tipo || '').substring(0, 100),
           capital: parseFloat(rowData.capital),
           tir: rowData.tir ? parseFloat(rowData.tir) : null,
           plazo_meses: rowData.plazo_meses ? parseInt(rowData.plazo_meses) : null,
           cuota: rowData.cuota ? parseFloat(rowData.cuota) : null,
           proximo_venc: rowData.proximo_venc || null,
-          escenario: rowData.escenario || scenario
+          escenario: String(rowData.escenario || scenario).substring(0, 50)
         };
+        
+        // Security: Additional bounds checking
+        if (debtData.capital < -1e12 || debtData.capital > 1e12) {
+          throw new Error(`Row ${i}: Capital amount out of allowed range`);
+        }
 
         // Validate required fields
         if (!debtData.entidad || !debtData.tipo || isNaN(debtData.capital) || debtData.capital <= 0) {

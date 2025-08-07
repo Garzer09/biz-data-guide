@@ -121,14 +121,32 @@ CaixaBank,Leasing Financiero,75000,5.1,48,1800,2026-01-15,base`;
     setIsUploading(true);
     
     try {
+      // Security: Additional file validation
+      if (!file) {
+        throw new Error('No file selected');
+      }
+      
+      // Security: Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File too large. Maximum size is 10MB');
+      }
+      
+      // Security: Validate file type
+      if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+        throw new Error('Only CSV files are allowed');
+      }
+      
+      // Security: Sanitize filename
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      
       // Generate unique file path
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const filePath = `debt_uploads/${data.company_id}/${timestamp}/${file?.name}`;
+      const filePath = `debt_uploads/${data.company_id}/${timestamp}/${sanitizedFileName}`;
 
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('import-files')
-        .upload(filePath, file!);
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 

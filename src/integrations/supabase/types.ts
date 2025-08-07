@@ -1658,49 +1658,6 @@ export type Database = {
           },
         ]
       }
-      vw_kpis_anual: {
-        Row: {
-          anio: string | null
-          beneficio_neto: number | null
-          company_id: string | null
-          facturacion: number | null
-          margen_ebitda_pct: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pyg_annual_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pyg_annual_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_vw"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "pyg_annual_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "company_access"
-            referencedColumns: ["company_id"]
-          },
-        ]
-      }
-      vw_kpis_anual_yoy: {
-        Row: {
-          anio: string | null
-          company_id: string | null
-          delta_pct: number | null
-          kpi: string | null
-          valor_actual: number | null
-          valor_anterior: number | null
-        }
-        Relationships: []
-      }
       vw_nof_summary: {
         Row: {
           anticipos_clientes: number | null
@@ -1742,39 +1699,6 @@ export type Database = {
           trabajos_en_curso?: never
         }
         Relationships: []
-      }
-      vw_punto_muerto: {
-        Row: {
-          company_id: string | null
-          margen_contribucion: number | null
-          margen_seguridad: number | null
-          margen_seguridad_valor: number | null
-          periodo: string | null
-          valor: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "periods_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "periods_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_vw"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "periods_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "company_access"
-            referencedColumns: ["company_id"]
-          },
-        ]
       }
       vw_pyg_analytic_detail: {
         Row: {

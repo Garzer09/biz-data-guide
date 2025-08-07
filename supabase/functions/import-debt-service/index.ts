@@ -19,7 +19,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { job_id } = await req.json();
+    const requestBody = await req.json();
+    const { job_id } = requestBody;
+    
+    // Security: Validate request body
+    if (!requestBody || typeof requestBody !== 'object') {
+      throw new Error('Invalid request body');
+    }
 
     if (!job_id) {
       throw new Error('job_id is required');
@@ -55,12 +61,22 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to download file: ${downloadError?.message}`);
     }
 
-    // Parse CSV content
+    // Parse CSV content with security validation
     const csvText = await fileData.text();
+    
+    // Security: Validate file size (10MB limit)
+    if (csvText.length > 10 * 1024 * 1024) {
+      throw new Error('File too large. Maximum size is 10MB');
+    }
+    
     const lines = csvText.split('\n').filter(line => line.trim());
     
     if (lines.length === 0) {
       throw new Error('Empty CSV file');
+    }
+    
+    if (lines.length > 10000) {
+      throw new Error('Too many rows. Maximum is 10,000 rows');
     }
 
     // Parse header
@@ -122,13 +138,20 @@ Deno.serve(async (req) => {
           throw new Error(`Row ${i}: Invalid periodo format. Expected YYYY-MM, got: ${rowData.periodo}`);
         }
 
-        // Validate and parse numeric fields
+        // Security: Validate and parse numeric fields with bounds checking
         const principal = parseFloat(rowData.principal || '0');
         const intereses = parseFloat(rowData.intereses || '0');
         const flujo_operativo = parseFloat(rowData.flujo_operativo || '0');
 
         if (isNaN(principal) || isNaN(intereses) || isNaN(flujo_operativo)) {
           throw new Error(`Row ${i}: Invalid numeric values`);
+        }
+        
+        // Security: Validate numeric bounds
+        if (principal < -1e12 || principal > 1e12 || 
+            intereses < -1e12 || intereses > 1e12 || 
+            flujo_operativo < -1e12 || flujo_operativo > 1e12) {
+          throw new Error(`Row ${i}: Numeric values out of allowed range`);
         }
 
         // Upsert debt service record
