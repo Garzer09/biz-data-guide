@@ -1039,6 +1039,20 @@ export type Database = {
           company_id: string
         }[]
       }
+      get_company_profile: {
+        Args: { _company_id: string }
+        Returns: {
+          sector: string
+          industria: string
+          año_fundacion: number
+          empleados: number
+          ingresos_anuales: number
+          sede: string
+          sitio_web: string
+          descripcion: string
+          updated_at: string
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
