@@ -247,7 +247,8 @@ async function processBalanceData(
       }
 
       // Add all available columns
-      [...columns.required, ...columns.optional].forEach(col => {
+      const allColumns = columns.required.concat(columns.optional);
+      allColumns.forEach(col => {
         if (col !== 'periodo' && row[col] !== undefined) {
           const value = Number(row[col])
           data[col] = isNaN(value) ? 0 : value
