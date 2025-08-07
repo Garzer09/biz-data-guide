@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.validate-pyg-data]
 verify_jwt = true
+
+[functions.import-pyg-anual]
+verify_jwt = true
