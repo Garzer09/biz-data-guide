@@ -1948,6 +1948,40 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_sales_segments: {
+        Row: {
+          company_id: string | null
+          costes_fijos: number | null
+          costes_variables: number | null
+          margen_contribucion: number | null
+          periodo: string | null
+          segmento: string | null
+          ventas: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
     }
     Functions: {
       allocate_pyg: {
@@ -2214,6 +2248,12 @@ export type Database = {
       get_rotacion_activos: {
         Args: { _company_id: string; _anio: string }
         Returns: number
+      }
+      get_sales_segments_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
       }
       get_segmentos: {
         Args: { _company_id: string; _anio: string }
