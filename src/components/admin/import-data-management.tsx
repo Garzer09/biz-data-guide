@@ -32,7 +32,9 @@ interface ImportJob {
 
 const importTypes = [
   { value: 'pyg_anual', label: 'P&G Anual' },
-  { value: 'company_profile', label: 'Perfil de Empresa' }
+  { value: 'company_profile', label: 'Perfil de Empresa' },
+  { value: 'balance_operativo', label: 'Balance Operativo' },
+  { value: 'balance_financiero', label: 'Balance Financiero' }
 ];
 
 interface ImportDataManagementProps {
@@ -238,11 +240,21 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
 
       // Get job type to determine which function to call
       const job = importJobs.find(j => j.id === jobId);
-      const functionName = job?.tipo === 'company_profile' ? 'import-company-profile' : 'import-pyg-anual';
+      let functionName = 'import-pyg-anual'; // default
+      
+      if (job?.tipo === 'company_profile') {
+        functionName = 'import-company-profile';
+      } else if (job?.tipo === 'balance_operativo' || job?.tipo === 'balance_financiero') {
+        functionName = 'import-balance';
+      }
       
       // Call the import edge function
+      const functionBody = (job?.tipo === 'balance_operativo' || job?.tipo === 'balance_financiero') 
+        ? { job_id: jobId, tipo: job.tipo.replace('balance_', '') }
+        : { job_id: jobId };
+        
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: { job_id: jobId }
+        body: functionBody
       });
 
       if (error) throw error;
@@ -333,18 +345,34 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
     return importTypes.find(t => t.value === tipo)?.label || tipo;
   };
 
-  const downloadTemplate = () => {
-    const csvContent = "company_alias,sector,industria,anio_fundacion,empleados,ingresos_anuales,sede,sitio_web,descripcion,estructura_accionarial,organigrama\n";
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'company_profile_template.csv');
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
+  const downloadTemplate = (type?: string) => {
+    const templateType = type || selectedType;
+    
+    if (templateType === 'company_profile') {
+      const csvContent = "company_alias,sector,industria,anio_fundacion,empleados,ingresos_anuales,sede,sitio_web,descripcion,estructura_accionarial,organigrama\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'company_profile_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else if (templateType === 'balance_operativo') {
+      // Download from public templates
+      const link = document.createElement('a');
+      link.href = '/templates/seed_balance_operativo_2024.csv';
+      link.download = 'balance_operativo_template.csv';
       link.click();
-      document.body.removeChild(link);
+    } else if (templateType === 'balance_financiero') {
+      // Download from public templates
+      const link = document.createElement('a');
+      link.href = '/templates/seed_balance_financiero_2024.csv';
+      link.download = 'balance_financiero_template.csv';
+      link.click();
     }
   };
 
@@ -426,10 +454,10 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
                 </Select>
               </div>
 
-              {selectedType === 'company_profile' && (
+              {(selectedType === 'company_profile' || selectedType === 'balance_operativo' || selectedType === 'balance_financiero') && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground mb-2">
-                    Para importar perfiles de empresa, descarga la plantilla:
+                    Para importar {getTypeLabel(selectedType).toLowerCase()}, descarga la plantilla:
                   </p>
                   <Button 
                     variant="outline" 

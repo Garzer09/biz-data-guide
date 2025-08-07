@@ -8,3 +8,9 @@ verify_jwt = true
 
 [functions.import-pyg-anual]
 verify_jwt = true
+
+[functions.import-company-profile]
+verify_jwt = true
+
+[functions.import-balance]
+verify_jwt = true

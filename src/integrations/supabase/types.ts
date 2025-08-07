@@ -858,6 +858,90 @@ export type Database = {
           },
         ]
       }
+      wc_financial_balances: {
+        Row: {
+          activo_corriente: number | null
+          activo_no_corriente: number | null
+          company_id: string
+          created_at: string
+          id: string
+          pasivo_corriente: number | null
+          pasivo_no_corriente: number | null
+          patrimonio_neto: number | null
+          periodo: string
+          updated_at: string
+        }
+        Insert: {
+          activo_corriente?: number | null
+          activo_no_corriente?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          pasivo_corriente?: number | null
+          pasivo_no_corriente?: number | null
+          patrimonio_neto?: number | null
+          periodo: string
+          updated_at?: string
+        }
+        Update: {
+          activo_corriente?: number | null
+          activo_no_corriente?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          pasivo_corriente?: number | null
+          pasivo_no_corriente?: number | null
+          patrimonio_neto?: number | null
+          periodo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wc_operating_balances: {
+        Row: {
+          anticipos_clientes: number | null
+          clientes: number | null
+          company_id: string
+          created_at: string
+          id: string
+          inventario: number | null
+          otros_acreedores_op: number | null
+          otros_deudores_op: number | null
+          periodo: string
+          proveedores: number | null
+          trabajos_en_curso: number | null
+          updated_at: string
+        }
+        Insert: {
+          anticipos_clientes?: number | null
+          clientes?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          inventario?: number | null
+          otros_acreedores_op?: number | null
+          otros_deudores_op?: number | null
+          periodo: string
+          proveedores?: number | null
+          trabajos_en_curso?: number | null
+          updated_at?: string
+        }
+        Update: {
+          anticipos_clientes?: number | null
+          clientes?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          inventario?: number | null
+          otros_acreedores_op?: number | null
+          otros_deudores_op?: number | null
+          periodo?: string
+          proveedores?: number | null
+          trabajos_en_curso?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       companies_vw: {
