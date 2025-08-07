@@ -965,6 +965,42 @@ export type Database = {
           },
         ]
       }
+      ratios_financieros: {
+        Row: {
+          anio: string
+          benchmark: number | null
+          company_id: string
+          created_at: string
+          id: string
+          periodo: string
+          ratio_name: string
+          ratio_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          anio: string
+          benchmark?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          periodo: string
+          ratio_name: string
+          ratio_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          anio?: string
+          benchmark?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          periodo?: string
+          ratio_name?: string
+          ratio_value?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_companies: {
         Row: {
           company_id: string
