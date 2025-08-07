@@ -21,9 +21,12 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('=== Starting import-company-profile function ===')
     const { job_id } = await req.json()
+    console.log('Received job_id:', job_id)
 
     if (!job_id) {
+      console.log('No job_id provided')
       return new Response(
         JSON.stringify({ error: 'job_id is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -33,8 +36,11 @@ Deno.serve(async (req) => {
     console.log(`Starting import for job: ${job_id}`)
 
     // Get authorization header and create client with user context
+    console.log('Checking authorization header...')
     const authHeader = req.headers.get('Authorization')
+    console.log('Auth header present:', !!authHeader)
     if (!authHeader) {
+      console.log('No authorization header found')
       return new Response(
         JSON.stringify({ error: 'Authorization header required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -55,13 +61,15 @@ Deno.serve(async (req) => {
     )
 
     // Check if user is admin using the user context
+    console.log('Checking if user is admin...')
     const { data: isAdmin, error: adminError } = await userSupabase
       .rpc('is_current_user_admin')
 
+    console.log('Admin check result - isAdmin:', isAdmin, 'error:', adminError)
     if (adminError || !isAdmin) {
       console.error('Admin check failed:', adminError)
       return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
+        JSON.stringify({ error: 'Admin access required', details: adminError }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
      }
