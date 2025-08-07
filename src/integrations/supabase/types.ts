@@ -631,7 +631,7 @@ export type Database = {
           concepto_codigo: string
           creado_en: string
           id: string
-          valor_total: number | null
+          valor_total: number
         }
         Insert: {
           anio: string
@@ -639,7 +639,7 @@ export type Database = {
           concepto_codigo: string
           creado_en?: string
           id?: string
-          valor_total?: number | null
+          valor_total: number
         }
         Update: {
           anio?: string
@@ -647,9 +647,30 @@ export type Database = {
           concepto_codigo?: string
           creado_en?: string
           id?: string
-          valor_total?: number | null
+          valor_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
           {
             foreignKeyName: "pyg_annual_concepto_codigo_fkey"
             columns: ["concepto_codigo"]
@@ -845,7 +866,29 @@ export type Database = {
           facturacion: number | null
           margen_ebitda_pct: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
       }
       vw_kpis_anual_yoy: {
         Row: {
@@ -881,7 +924,29 @@ export type Database = {
           otros_gas_op: number | null
           otros_ing_op: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
       }
     }
     Functions: {
