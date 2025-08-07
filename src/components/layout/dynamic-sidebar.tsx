@@ -39,7 +39,8 @@ const pageIconMap: Record<string, any> = {
   eva: Target,
   conclusiones: FileText,
   'dead-point': AlertTriangle,
-  nof: DollarSign
+  nof: DollarSign,
+  debt: Users
 };
 
 const pageLabels: Record<string, string> = {
@@ -54,7 +55,8 @@ const pageLabels: Record<string, string> = {
   eva: "Análisis EVA",
   conclusiones: "Conclusiones",
   'dead-point': "Punto Muerto",
-  nof: "Análisis NOF"
+  nof: "Análisis NOF",
+  debt: "Pool Bancario"
 };
 
 export function DynamicSidebar({ onPageChange }: SidebarProps) {
