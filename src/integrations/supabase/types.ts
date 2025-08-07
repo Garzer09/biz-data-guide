@@ -288,8 +288,10 @@ export type Database = {
           created_at: string
           descripcion: string | null
           empleados: number | null
+          estructura_accionarial: string | null
           industria: string | null
           ingresos_anuales: number | null
+          organigrama: string | null
           sector: string | null
           sede: string | null
           sitio_web: string | null
@@ -301,8 +303,10 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           empleados?: number | null
+          estructura_accionarial?: string | null
           industria?: string | null
           ingresos_anuales?: number | null
+          organigrama?: string | null
           sector?: string | null
           sede?: string | null
           sitio_web?: string | null
@@ -314,8 +318,10 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           empleados?: number | null
+          estructura_accionarial?: string | null
           industria?: string | null
           ingresos_anuales?: number | null
+          organigrama?: string | null
           sector?: string | null
           sede?: string | null
           sitio_web?: string | null
@@ -1066,17 +1072,31 @@ export type Database = {
         Returns: boolean
       }
       upsert_company_profile: {
-        Args: {
-          _company_id: string
-          _sector: string
-          _industria: string
-          _año_fundacion: number
-          _empleados: number
-          _ingresos_anuales: number
-          _sede: string
-          _sitio_web: string
-          _descripcion: string
-        }
+        Args:
+          | {
+              _company_id: string
+              _sector: string
+              _industria: string
+              _año_fundacion: number
+              _empleados: number
+              _ingresos_anuales: number
+              _sede: string
+              _sitio_web: string
+              _descripcion: string
+            }
+          | {
+              _company_id: string
+              _sector: string
+              _industria: string
+              _año_fundacion: number
+              _empleados: number
+              _ingresos_anuales: number
+              _sede: string
+              _sitio_web: string
+              _descripcion: string
+              _estructura_accionarial: string
+              _organigrama: string
+            }
         Returns: undefined
       }
     }
