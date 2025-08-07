@@ -30,6 +30,7 @@ interface SidebarProps {
 const pageIconMap: Record<string, any> = {
   dashboard: BarChart3,
   empresa: Building2,
+  profile: Users,
   pyg: Calculator,
   balance: PieChart,
   cashflow: DollarSign,
@@ -43,6 +44,7 @@ const pageIconMap: Record<string, any> = {
 const pageLabels: Record<string, string> = {
   dashboard: "Dashboard Principal",
   empresa: "Perfil de Empresa",
+  profile: "Formulario de Perfil",
   pyg: "Cuenta P&G",
   balance: "Balance",
   cashflow: "Flujos de Caja", 
