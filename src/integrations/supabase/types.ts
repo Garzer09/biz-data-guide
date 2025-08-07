@@ -634,7 +634,52 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_kpis_anual: {
+        Row: {
+          anio: string | null
+          beneficio_neto: number | null
+          company_id: string | null
+          facturacion: number | null
+          margen_ebitda_pct: number | null
+        }
+        Relationships: []
+      }
+      vw_kpis_anual_yoy: {
+        Row: {
+          anio: string | null
+          company_id: string | null
+          delta_pct: number | null
+          kpi: string | null
+          valor_actual: number | null
+          valor_anterior: number | null
+        }
+        Relationships: []
+      }
+      vw_pyg_anual: {
+        Row: {
+          amort: number | null
+          anio: string | null
+          bai: number | null
+          beneficio_neto: number | null
+          company_id: string | null
+          coste_ventas: number | null
+          dep: number | null
+          ebit: number | null
+          ebitda: number | null
+          extra: number | null
+          gas_fin: number | null
+          impuestos: number | null
+          ing_fin: number | null
+          ingresos: number | null
+          margen_bruto: number | null
+          margen_ebitda_pct: number | null
+          margen_neto_pct: number | null
+          opex: number | null
+          otros_gas_op: number | null
+          otros_ing_op: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       allocate_pyg: {
