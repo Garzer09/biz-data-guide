@@ -1,10 +1,11 @@
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/ui/metric-card";
 import { YearSelector } from "@/components/dashboard/year-selector";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { logger, logError } from "@/lib/logger";
 
 interface KPIData {
   facturacion: number;
@@ -19,7 +20,7 @@ interface YoYData {
   delta_pct: number;
 }
 
-export function CompanyDashboard() {
+const CompanyDashboard = memo(function CompanyDashboard() {
   const { companyId } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -287,4 +288,6 @@ export function CompanyDashboard() {
       </div>
     </div>
   );
-}
+});
+
+export { CompanyDashboard };

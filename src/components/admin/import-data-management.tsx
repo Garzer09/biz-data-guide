@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Upload, FileText, Calendar, Building2, AlertCircle, CheckCircle, Play, Info, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logger, logError } from "@/lib/logger";
+import type { Company, ImportJob, ImportJobSummary } from "@/types";
 
 interface Company {
   id: string;
@@ -24,7 +26,7 @@ interface ImportJob {
   tipo: string;
   estado: string;
   storage_path: string;
-  resumen: any;
+  resumen: ImportJobSummary;
   creado_en: string;
   actualizado_en: string;
   companies: Company;
@@ -114,7 +116,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
           const { data: companyDetails, error: detailsError } = await supabase
             .from('companies')
             .select('id, name')
-            .in('id', data.map((c: any) => c.company_id))
+            .in('id', data.map((c: ImportJob) => c.company_id))
             .eq('estado', 'ACTIVO');
           
           if (detailsError) throw detailsError;
@@ -224,11 +226,11 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         description: "El archivo ha sido subido y está listo para procesar",
       });
 
-    } catch (error: any) {
-      console.error('Error uploading file:', error);
+    } catch (error: unknown) {
+      logError(error, 'ImportDataManagement:UploadFile');
       toast({
         title: "Error",
-        description: error.message || "Error al subir el archivo",
+        description: error instanceof Error ? error.message : "Error al subir el archivo",
         variant: "destructive"
       });
     } finally {
