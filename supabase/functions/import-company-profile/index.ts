@@ -32,26 +32,39 @@ Deno.serve(async (req) => {
 
     console.log(`Starting import for job: ${job_id}`)
 
-    // Check if user is admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    // Get authorization header and create client with user context
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Authorization header required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const { data: isAdmin, error: adminError } = await supabase
+    // Create a client with the user's auth for checking admin status
+    const userSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
+    )
+
+    // Check if user is admin using the user context
+    const { data: isAdmin, error: adminError } = await userSupabase
       .rpc('is_current_user_admin')
 
     if (adminError || !isAdmin) {
+      console.error('Admin check failed:', adminError)
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
-    }
-
-    // Get job details
+     }
     const { data: job, error: jobError } = await supabase
       .from('import_jobs')
       .select('company_id, storage_path, tipo')
@@ -247,14 +260,12 @@ Deno.serve(async (req) => {
           _company_id: companyId,
           _sector: rowData.sector || null,
           _industria: rowData.industria || null,
-          _año_fundacion: anioFundacion,
+          "_año_fundacion": anioFundacion,
           _empleados: empleados,
           _ingresos_anuales: ingresosAnuales,
           _sede: rowData.sede || null,
           _sitio_web: rowData.sitio_web || null,
-          _descripcion: rowData.descripcion || null,
-          _estructura_accionarial: estructuraAccionarial,
-          _organigrama: organigrama
+          _descripcion: rowData.descripcion || null
         })
 
         if (upsertError) {
