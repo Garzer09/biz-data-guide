@@ -65,16 +65,26 @@ export function RatiosPage() {
 
     setIsLoading(true);
     try {
-      // Use dedicated ratios years RPC function
-      const { data: yearList, error: errYears } = await supabase
-        .rpc('get_ratios_years', { _company_id: companyId });
-
-      if (errYears) {
-        setError(errYears.message);
-        return;
+      // First try calculated ratios years, fallback to imported ratios years
+      let yearList: any[] = [];
+      
+      // Try calculated ratios first (more comprehensive)
+      const { data: calculatedYears, error: calcError } = await supabase
+        .rpc('get_ratios_calculados_years', { _company_id: companyId });
+      
+      if (!calcError && calculatedYears?.length > 0) {
+        yearList = calculatedYears;
+      } else {
+        // Fallback to imported ratios years
+        const { data: importedYears, error: impError } = await supabase
+          .rpc('get_ratios_years', { _company_id: companyId });
+        
+        if (!impError) {
+          yearList = importedYears || [];
+        }
       }
       
-      const years = yearList?.map((item: any) => item.anio) || [];
+      const years = yearList.map((item: any) => item.anio) || [];
       setYears(years);
       
       if (years.length > 0) {
@@ -95,18 +105,73 @@ export function RatiosPage() {
     setError(null);
     
     try {
-      const { data, error: ratiosError } = await supabase
-        .rpc('get_ratios_financieros', {
-          _company_id: companyId,
-          _anio: selectedYear
-        });
+      let combinedRatios: RatioData[] = [];
+      
+      // First try to get calculated ratios (more comprehensive)
+      const calculatedRatios: RatioData[] = [
+        { ratio_name: 'Liquidez Corriente', ratio_value: null, benchmark: 1.5 },
+        { ratio_name: 'Ratio Endeudamiento', ratio_value: null, benchmark: 0.6 },
+        { ratio_name: 'ROA', ratio_value: null, benchmark: 0.05 },
+        { ratio_name: 'ROE', ratio_value: null, benchmark: 0.15 },
+        { ratio_name: 'Rotación Activos', ratio_value: null, benchmark: 1.0 },
+        { ratio_name: 'Cobertura Intereses', ratio_value: null, benchmark: 3.0 },
+        { ratio_name: 'Deuda/EBITDA', ratio_value: null, benchmark: 3.0 },
+        { ratio_name: 'Apalancamiento', ratio_value: null, benchmark: null },
+        { ratio_name: 'Capitalización', ratio_value: null, benchmark: 0.7 }
+      ];
 
-      if (ratiosError) {
-        setError(ratiosError.message);
-        return;
+      // Calculate each ratio using our new functions
+      const calculationPromises = [
+        supabase.rpc('get_ratio_liquidez_corriente', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_ratio_endeudamiento', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_roa', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_roe', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_rotacion_activos', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_cobertura_intereses', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_deuda_ebitda', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_apalancamiento', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_capitalizacion', { _company_id: companyId, _anio: selectedYear })
+      ];
+
+      const results = await Promise.all(calculationPromises);
+      
+      // Map results to calculatedRatios
+      results.forEach((result, index) => {
+        if (!result.error && result.data !== null) {
+          calculatedRatios[index].ratio_value = result.data;
+        }
+      });
+
+      combinedRatios = calculatedRatios;
+
+      // Also try to get imported ratios as fallback/supplement
+      try {
+        const { data: importedData } = await supabase
+          .rpc('get_ratios_financieros', {
+            _company_id: companyId,
+            _anio: selectedYear
+          });
+
+        if (importedData && importedData.length > 0) {
+          // Merge imported ratios with calculated ones, preferring calculated values
+          const importedMap = new Map(importedData.map((r: any) => [r.ratio_name, r]));
+          
+          combinedRatios = combinedRatios.map(calculated => {
+            const imported = importedMap.get(calculated.ratio_name);
+            return {
+              ...calculated,
+              // Use calculated value if available, otherwise use imported value
+              ratio_value: calculated.ratio_value !== null ? calculated.ratio_value : (imported?.ratio_value || null),
+              // Use imported benchmark if available and calculated doesn't have one
+              benchmark: calculated.benchmark !== null ? calculated.benchmark : (imported?.benchmark || null)
+            };
+          });
+        }
+      } catch (importError) {
+        console.log('Imported ratios not available, using calculated only');
       }
 
-      setRatiosData(data || []);
+      setRatiosData(combinedRatios);
     } catch (error) {
       console.error('Error fetching ratios:', error);
       setError('Error cargando ratios financieros');
