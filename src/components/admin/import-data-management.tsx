@@ -32,6 +32,7 @@ interface ImportJob {
 
 const importTypes = [
   { value: 'pyg_anual', label: 'P&G Anual' },
+  { value: 'pyg_analytic', label: 'P&G Analítico' },
   { value: 'company_profile', label: 'Perfil de Empresa' },
   { value: 'balance_operativo', label: 'Balance Operativo' },
   { value: 'balance_financiero', label: 'Balance Financiero' },
@@ -264,6 +265,10 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         functionName = 'import-debts';
         functionBody = { job_id: jobId, scenario: 'base' };
         console.log('Calling import-debts function with:', functionBody);
+      } else if (job?.tipo === 'pyg_analytic') {
+        functionName = 'import-pyg-analytic';
+        functionBody = { job_id: jobId };
+        console.log('Calling import-pyg-analytic function with:', functionBody);
       }
         
       const { data, error } = await supabase.functions.invoke(functionName, {
@@ -363,6 +368,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
   const getTypeLabel = (tipo: string) => {
     const typeMap: Record<string, string> = {
       'pyg_anual': 'P&G Anual',
+      'pyg_analytic': 'P&G Analítico',
       'company_profile': 'Perfil de Empresa',
       'balance_operativo': 'Balance Operativo',
       'balance_financiero': 'Balance Financiero',
@@ -468,6 +474,24 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         link.click();
         document.body.removeChild(link);
       }
+    } else if (templateType === 'pyg_analytic') {
+      const csvContent = `company_code,periodo,concepto_codigo,valor,segmento,centro_coste
+EMP_DEMO_2,2024,PYG_INGRESOS,500000,Ventas Online,Madrid
+EMP_DEMO_2,2024,PYG_COSTE_VENTAS,-300000,Ventas Online,Madrid
+EMP_DEMO_2,2024,PYG_GASTOS_PERSONAL,-80000,Administración,Madrid
+EMP_DEMO_2,2024-01,PYG_INGRESOS,41666,Ventas Online,Madrid
+EMP_DEMO_2,2024-01,PYG_COSTE_VENTAS,-25000,Ventas Online,Madrid`;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'pyg_analytic_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
 
@@ -549,7 +573,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
                 </Select>
               </div>
 
-              {(selectedType === 'company_profile' || selectedType === 'balance_operativo' || selectedType === 'balance_financiero' || selectedType.startsWith('cashflow_')) && (
+              {(selectedType === 'company_profile' || selectedType === 'balance_operativo' || selectedType === 'balance_financiero' || selectedType.startsWith('cashflow_') || selectedType === 'ratios' || selectedType === 'debts' || selectedType === 'pyg_analytic') && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground mb-2">
                     Para importar {getTypeLabel(selectedType).toLowerCase()}, descarga la plantilla:

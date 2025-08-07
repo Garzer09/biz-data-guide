@@ -1,18 +1,26 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Users, Upload, CreditCard } from "lucide-react";
+import { Building2, Users, Upload, CreditCard, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { CompaniesManagement } from "./companies-management";
 import { UsersManagement } from "./users-management";
 import { ImportDataManagement } from "./import-data-management";
 import { DebtUploadModal } from "../debt/debt-upload-modal";
+import { PyGAnalyticUploadModal } from "./pyg-analytic-upload-modal";
 
 export function AdminPanel() {
   const [isDebtModalOpen, setIsDebtModalOpen] = useState(false);
+  const [isPyGAnalyticModalOpen, setIsPyGAnalyticModalOpen] = useState(false);
 
   const handleDebtUploadSuccess = () => {
     // Refresh any data if needed
     console.log('Debt upload completed successfully');
+  };
+
+  const handlePyGAnalyticUploadSuccess = () => {
+    // Refresh any data if needed
+    console.log('P&G Analytic upload completed successfully');
   };
 
   return (
@@ -80,7 +88,23 @@ export function AdminPanel() {
                 Vista global de todas las importaciones del sistema
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium">P&G Analítico</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Carga datos de P&G desglosados por centros de coste y segmentos
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setIsPyGAnalyticModalOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Cargar P&G Analítico
+                </Button>
+              </div>
+              
               <ImportDataManagement />
             </CardContent>
           </Card>
@@ -148,6 +172,12 @@ export function AdminPanel() {
         isOpen={isDebtModalOpen}
         onClose={() => setIsDebtModalOpen(false)}
         onSuccess={handleDebtUploadSuccess}
+      />
+      
+      <PyGAnalyticUploadModal
+        isOpen={isPyGAnalyticModalOpen}
+        onClose={() => setIsPyGAnalyticModalOpen(false)}
+        onSuccess={handlePyGAnalyticUploadSuccess}
       />
     </div>
   );

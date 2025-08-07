@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -57,11 +57,11 @@ export function PyGAnalyticUploadModal({ isOpen, onClose, onSuccess }: PyGAnalyt
   };
 
   // Load companies when modal opens
-  useState(() => {
+  useEffect(() => {
     if (isOpen) {
       loadCompanies();
     }
-  });
+  }, [isOpen]);
 
   const downloadTemplate = () => {
     const csvContent = `company_code,periodo,concepto_codigo,valor,segmento,centro_coste
