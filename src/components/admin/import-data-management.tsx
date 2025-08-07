@@ -152,7 +152,13 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
   };
 
   const uploadFile = async () => {
+    console.log('uploadFile called');
+    console.log('file:', file);
+    console.log('selectedCompanyId:', selectedCompanyId);
+    console.log('selectedType:', selectedType);
+    
     if (!file || !selectedCompanyId) {
+      console.log('Validation failed - missing file or company');
       toast({
         title: "Error",
         description: "Por favor selecciona empresa y archivo",
@@ -162,8 +168,8 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
     }
 
     try {
+      console.log('Starting upload process');
       setProcessing(true);
-      
       // Generate unique file path
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const fileExt = file.name.split('.').pop();
