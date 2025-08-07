@@ -21,6 +21,7 @@ interface CompanyPages {
 
 const availablePages = [
   { id: 'dashboard', label: 'Dashboard Principal' },
+  { id: 'empresa', label: 'Perfil de Empresa' },
   { id: 'pyg', label: 'Cuenta P&G' },
   { id: 'balance', label: 'Balance' },
   { id: 'cashflow', label: 'Flujos de Caja' },
