@@ -45,11 +45,21 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Set user context for RLS
-    await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    // Create a separate client for RPC calls with the user's token
+    const userSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader
+          }
+        }
+      }
+    );
 
     // Check if user is admin using our function
-    const { data: isAdmin, error: adminError } = await supabase
+    const { data: isAdmin, error: adminError } = await userSupabase
       .rpc('is_current_user_admin')
 
     if (adminError || !isAdmin) {
