@@ -1,263 +1,315 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PieChart, TrendingUp, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { YearSelector } from "@/components/dashboard/year-selector";
+import { BarChartCard } from "@/components/charts/bar-chart-card";
+import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { useToast } from "@/hooks/use-toast";
+import { Download, FileSpreadsheet } from "lucide-react";
 
-interface SegmentData {
+interface SalesSegmentData {
   segmento: string;
-  periodo: string;
-  concepto_nombre: string;
-  grupo: string;
-  valor_total: number;
-  total_valor: number;
-  company_id: string;
+  ventas: number;
+  costes_variables: number;
+  costes_fijos: number;
+  margen_contribucion: number;
 }
 
 export function SalesSegmentsPage() {
   const { companyId } = useParams();
-  const [data, setData] = useState<SegmentData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [years, setYears] = useState<string[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [data, setData] = useState<SalesSegmentData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Fetch available years on mount
   useEffect(() => {
     if (companyId) {
-      fetchData();
+      fetchYears();
     }
   }, [companyId]);
 
-  const fetchData = async () => {
+  // Fetch data when year changes
+  useEffect(() => {
+    if (companyId && selectedYear) {
+      fetchSalesData();
+    }
+  }, [companyId, selectedYear]);
+
+  const fetchYears = async () => {
     try {
-      setLoading(true);
-      
-      const { data: segmentData, error } = await supabase
-        .from('pyg_analytic')
-        .select(`
-          segmento,
-          periodo,
-          concepto_codigo,
-          valor,
-          catalog_pyg_concepts (
-            concepto_nombre,
-            grupo
-          )
-        `)
-        .eq('company_id', companyId)
-        .not('segmento', 'is', null)
-        .order('periodo', { ascending: false });
+      const { data: yearsData, error } = await supabase
+        .rpc('get_sales_segments_years', { _company_id: companyId });
 
       if (error) throw error;
 
-      // Transform the data to match the expected structure
-      const transformedData = segmentData?.map(item => ({
-        company_id: companyId,
-        periodo: item.periodo,
-        anio: item.periodo.substring(0, 4),
-        segmento: item.segmento,
-        concepto_codigo: item.concepto_codigo,
-        concepto_nombre: item.catalog_pyg_concepts?.concepto_nombre || '',
-        grupo: item.catalog_pyg_concepts?.grupo || '',
-        valor_total: item.valor,
-        total_valor: item.valor,
-        num_registros: 1
-      })) || [];
-
-      setData(transformedData);
-
-    } catch (error: any) {
-      console.error('Error fetching segment data:', error);
+      const yearsList = yearsData.map((r: { anio: string }) => r.anio);
+      setYears(yearsList);
+      if (yearsList.length > 0) {
+        setSelectedYear(yearsList[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching years:', error);
+      setError('Error al cargar los años disponibles');
       toast({
         title: "Error",
-        description: "No se pudieron cargar los datos de segmentos",
-        variant: "destructive"
+        description: "No se pudieron cargar los años disponibles",
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (loading) {
+  const fetchSalesData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const { data: salesData, error } = await supabase
+        .from('vw_sales_segments')
+        .select('segmento, ventas, costes_variables, costes_fijos, margen_contribucion')
+        .eq('company_id', companyId)
+        .like('periodo', `${selectedYear}-%`);
+
+      if (error) throw error;
+
+      // Group data by segment and sum values
+      const groupedData = salesData.reduce((acc: Record<string, SalesSegmentData>, row) => {
+        const segment = row.segmento;
+        if (!acc[segment]) {
+          acc[segment] = {
+            segmento: segment,
+            ventas: 0,
+            costes_variables: 0,
+            costes_fijos: 0,
+            margen_contribucion: 0
+          };
+        }
+        
+        acc[segment].ventas += row.ventas || 0;
+        acc[segment].costes_variables += row.costes_variables || 0;
+        acc[segment].costes_fijos += row.costes_fijos || 0;
+        acc[segment].margen_contribucion += row.margen_contribucion || 0;
+        
+        return acc;
+      }, {});
+
+      setData(Object.values(groupedData));
+    } catch (error) {
+      console.error('Error fetching sales data:', error);
+      setError('Error al cargar los datos de ventas por segmentos');
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos de ventas por segmentos",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  const formatPercentage = (value: number, total: number): string => {
+    if (total === 0) return "0.0%";
+    return `${((value / total) * 100).toFixed(1)}%`;
+  };
+
+  const getTotalVentas = () => data.reduce((sum, item) => sum + item.ventas, 0);
+
+  const exportToCSV = () => {
+    const csvContent = [
+      'Segmento,Ventas,Costes Variables,Costes Fijos,Margen Contribución,% Margen',
+      ...data.map(row => [
+        row.segmento,
+        row.ventas,
+        row.costes_variables,
+        row.costes_fijos,
+        row.margen_contribucion,
+        formatPercentage(row.margen_contribucion, row.ventas)
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `ventas_segmentos_${selectedYear}.csv`;
+    link.click();
+  };
+
+  if (!companyId) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Empresa no seleccionada</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando datos de segmentos...</p>
+          <p className="text-muted-foreground">Cargando datos de ventas por segmentos...</p>
         </div>
       </div>
     );
   }
 
-  // Group data by segment and period
-  const groupedBySegment = data.reduce((acc, item) => {
-    if (!acc[item.segmento]) {
-      acc[item.segmento] = {};
-    }
-    if (!acc[item.segmento][item.periodo]) {
-      acc[item.segmento][item.periodo] = [];
-    }
-    acc[item.segmento][item.periodo].push(item);
-    return acc;
-  }, {} as Record<string, Record<string, SegmentData[]>>);
-
-  // Calculate totals by segment
-  const segmentTotals = Object.entries(groupedBySegment).map(([segmento, periods]) => {
-    const totalIngresos = Object.values(periods)
-      .flat()
-      .filter(item => item.concepto_nombre.toLowerCase().includes('ingreso'))
-      .reduce((sum, item) => sum + item.total_valor, 0);
-    
-    const totalGastos = Object.values(periods)
-      .flat()
-      .filter(item => !item.concepto_nombre.toLowerCase().includes('ingreso'))
-      .reduce((sum, item) => sum + Math.abs(item.total_valor), 0);
-    
-    return {
-      segmento,
-      ingresos: totalIngresos,
-      gastos: totalGastos,
-      margen: totalIngresos - totalGastos,
-      periodos: Object.keys(periods)
-    };
-  });
-
-  const totalIngresos = segmentTotals.reduce((sum, seg) => sum + seg.ingresos, 0);
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Ventas por Segmentos</h1>
-        <p className="text-muted-foreground">
-          Análisis de ingresos y rentabilidad por segmento de negocio
-        </p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Ventas por Segmentos</h1>
+          <p className="text-muted-foreground">
+            Análisis de rendimiento por segmento de negocio
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <YearSelector 
+            selectedYear={selectedYear}
+            onYearChange={setSelectedYear}
+            availableYears={years}
+          />
+          <Button variant="outline" onClick={exportToCSV} disabled={data.length === 0}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+          <Button variant="outline" disabled>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar Gráfico
+          </Button>
+        </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Segmentos</CardTitle>
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{segmentTotals.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Segmentos activos
-            </p>
-          </CardContent>
-        </Card>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {totalIngresos.toLocaleString('es-ES', {
-                style: 'currency',
-                currency: 'EUR',
-                maximumFractionDigits: 0
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Todos los segmentos
-            </p>
-          </CardContent>
-        </Card>
+      {data.length === 0 && !error && (
+        <Alert>
+          <AlertDescription>
+            No se encontraron datos de segmentos para el año {selectedYear}
+          </AlertDescription>
+        </Alert>
+      )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mejor Segmento</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {segmentTotals.length > 0 ? 
-                segmentTotals.reduce((best, current) => 
-                  current.margen > best.margen ? current : best
-                ).segmento : 'N/A'
-              }
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Mayor margen
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {data.length > 0 && (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Segmentos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(getTotalVentas())}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Mejor Segmento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.reduce((best, current) => 
+                    current.margen_contribucion > best.margen_contribucion ? current : best
+                  ).segmento}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Segment Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {segmentTotals.map((segment) => (
-          <Card key={segment.segmento}>
+          {/* Table */}
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                {segment.segmento}
-                <Badge variant={segment.margen > 0 ? "default" : "destructive"}>
-                  {segment.margen > 0 ? "Rentable" : "Pérdidas"}
-                </Badge>
-              </CardTitle>
+              <CardTitle>Detalle por Segmento</CardTitle>
               <CardDescription>
-                {segment.periodos.length} período(s) de datos
+                Desglose completo de ventas, costes y márgenes por segmento
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Ingresos</span>
-                  <span className="font-medium text-green-600">
-                    {segment.ingresos.toLocaleString('es-ES', {
-                      style: 'currency',
-                      currency: 'EUR'
-                    })}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Gastos</span>
-                  <span className="font-medium text-red-600">
-                    {segment.gastos.toLocaleString('es-ES', {
-                      style: 'currency',
-                      currency: 'EUR'
-                    })}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="font-medium">Margen</span>
-                  <span className={`font-bold ${segment.margen >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {segment.margen.toLocaleString('es-ES', {
-                      style: 'currency',
-                      currency: 'EUR'
-                    })}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Participación</span>
-                  <span className="text-sm font-medium">
-                    {totalIngresos > 0 ? ((segment.ingresos / totalIngresos) * 100).toFixed(1) : 0}%
-                  </span>
-                </div>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Segmento</TableHead>
+                    <TableHead className="text-right">Ventas</TableHead>
+                    <TableHead className="text-right">Costes Variables</TableHead>
+                    <TableHead className="text-right">Costes Fijos</TableHead>
+                    <TableHead className="text-right">Margen Contribución</TableHead>
+                    <TableHead className="text-right">% Margen</TableHead>
+                    <TableHead className="text-right">Participación</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((row) => (
+                    <TableRow key={row.segmento}>
+                      <TableCell className="font-medium">{row.segmento}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.ventas)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.costes_variables)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.costes_fijos)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.margen_contribucion)}</TableCell>
+                      <TableCell className="text-right">
+                        {formatPercentage(row.margen_contribucion, row.ventas)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatPercentage(row.ventas, getTotalVentas())}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {segmentTotals.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <PieChart className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No hay datos de segmentos</h3>
-            <p className="text-muted-foreground text-center">
-              No se encontraron datos de segmentos para esta empresa.
-              <br />
-              Sube un archivo CSV de P&G Analítico con segmentos desde el panel de administrador.
-            </p>
-          </CardContent>
-        </Card>
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Bar Chart */}
+            <BarChartCard
+              title="Comparativa por Segmento"
+              description="Ventas, costes variables y costes fijos por segmento"
+              data={data}
+              dataKeys={['ventas', 'costes_variables', 'costes_fijos']}
+              xAxisKey="segmento"
+              colors={["hsl(142, 76%, 36%)", "hsl(346, 87%, 43%)", "hsl(262, 83%, 58%)"]}
+              formatValue={formatCurrency}
+            />
+
+            {/* Pie Chart */}
+            <PieChartCard
+              title="Distribución del Margen de Contribución"
+              description="Participación de cada segmento en el margen total"
+              data={data.map(item => ({
+                name: item.segmento,
+                value: item.margen_contribucion
+              }))}
+              formatValue={formatCurrency}
+            />
+          </div>
+        </>
       )}
     </div>
   );
