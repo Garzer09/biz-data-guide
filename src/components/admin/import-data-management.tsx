@@ -56,12 +56,16 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
   useEffect(() => {
     if (isAdmin) {
       fetchData();
-      // Pre-select company if filtering by specific company
-      if (filterCompanyId) {
-        setSelectedCompanyId(filterCompanyId);
-      }
     }
-  }, [isAdmin, filterCompanyId]);
+  }, [isAdmin]);
+
+  // Separate useEffect for setting the company when filterCompanyId changes
+  useEffect(() => {
+    if (filterCompanyId && companies.length > 0) {
+      console.log('Setting selectedCompanyId to:', filterCompanyId);
+      setSelectedCompanyId(filterCompanyId);
+    }
+  }, [filterCompanyId, companies]);
 
   const fetchData = async () => {
     try {
@@ -383,11 +387,18 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
                   <Label htmlFor="company">Empresa</Label>
                   <Select 
                     value={selectedCompanyId} 
-                    onValueChange={setSelectedCompanyId}
+                    onValueChange={(value) => {
+                      console.log('Company selected:', value);
+                      setSelectedCompanyId(value);
+                    }}
                     disabled={!!filterCompanyId} // Disable if filtering by specific company
                   >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona una empresa" />
+                    <SelectValue placeholder={
+                      filterCompanyId 
+                        ? companies.find(c => c.id === filterCompanyId)?.name || "Empresa seleccionada"
+                        : "Selecciona una empresa"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((company) => (
@@ -437,7 +448,11 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
                   id="file"
                   type="file"
                   accept=".csv,.xlsx,.xls"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const selectedFile = e.target.files?.[0] || null;
+                    console.log('File selected:', selectedFile);
+                    setFile(selectedFile);
+                  }}
                 />
               </div>
 
