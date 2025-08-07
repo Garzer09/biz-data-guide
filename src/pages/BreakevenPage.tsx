@@ -4,7 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { YearSelector } from "@/components/dashboard/year-selector";
+import { BreakEvenSimulator } from "@/components/breakeven/break-even-simulator";
+import { BreakEvenChart } from "@/components/breakeven/break-even-chart";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Target, 
@@ -14,7 +20,9 @@ import {
   BarChart3, 
   TrendingUp,
   Shield,
-  Activity
+  Activity,
+  Download,
+  Info
 } from "lucide-react";
 
 interface BreakevenData {
@@ -29,6 +37,12 @@ interface BreakevenData {
   apalancamiento_operativo: number;
 }
 
+interface SimulationScenario {
+  unidadesBE: number;
+  valorBE: number;
+  margenSeg: number;
+}
+
 export function BreakevenPage() {
   const { companyId } = useParams();
   const { toast } = useToast();
@@ -36,7 +50,9 @@ export function BreakevenPage() {
   // State
   const [years, setYears] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>("");
+  const [scenario, setScenario] = useState<"base" | "optimista" | "pesimista">("base");
   const [breakevenData, setBreakevenData] = useState<BreakevenData | null>(null);
+  const [simulationData, setSimulationData] = useState<SimulationScenario | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -177,22 +193,59 @@ export function BreakevenPage() {
     );
   }
 
+  const handleScenarioApply = (newScenario: SimulationScenario) => {
+    setSimulationData(newScenario);
+    toast({
+      title: "Escenario aplicado",
+      description: "Los datos de simulación han sido actualizados"
+    });
+  };
+
+  const handleExportPDF = () => {
+    toast({
+      title: "Función no disponible",
+      description: "La exportación a PDF estará disponible próximamente"
+    });
+  };
+
+  // Use simulation data if available, otherwise use real data
+  const displayData = simulationData ? {
+    ...breakevenData!,
+    punto_equilibrio_valor: simulationData.valorBE,
+    margen_seguridad_porcentaje: simulationData.margenSeg,
+  } : breakevenData;
+
   return (
-    <div className="space-y-6" role="main" aria-label="Análisis de Punto Muerto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Análisis de Punto Muerto</h1>
-          <p className="text-muted-foreground">Análisis de costes, margen de contribución y umbral de rentabilidad</p>
+    <TooltipProvider>
+      <div className="space-y-6" role="main" aria-label="Análisis de Punto Muerto">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Análisis de Punto Muerto</h1>
+            <p className="text-muted-foreground">Análisis de costes, margen de contribución y umbral de rentabilidad</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Select value={scenario} onValueChange={(value: any) => setScenario(value)}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Escenario" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="base">Base</SelectItem>
+                <SelectItem value="optimista">Optimista</SelectItem>
+                <SelectItem value="pesimista">Pesimista</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={handleExportPDF}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </Button>
+            <YearSelector
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
+              availableYears={years}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <YearSelector
-            selectedYear={selectedYear}
-            onYearChange={setSelectedYear}
-            availableYears={years}
-          />
-        </div>
-      </div>
 
       {/* Error Alert */}
       {error && (
@@ -211,218 +264,220 @@ export function BreakevenPage() {
         </div>
       )}
 
-      {/* Breakeven Analysis Cards */}
+      {/* KPI Cards */}
       {!isLoading && breakevenData && (
         <>
-          {/* Financial Overview */}
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <DollarSign className="h-4 w-4 text-primary" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Target className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-medium">Punto Muerto (Valor)</CardTitle>
+                      <CardDescription className="text-xs">Umbral de rentabilidad</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                    <CardDescription className="text-xs">Facturación del período</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {formatCurrency(breakevenData.ingresos_totales)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-warning/10 rounded-lg">
-                    <BarChart3 className="h-4 w-4 text-warning" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm font-medium">Costes Variables</CardTitle>
-                    <CardDescription className="text-xs">Coste de ventas</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-warning">
-                  {formatCurrency(breakevenData.costes_variables)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-destructive/10 rounded-lg">
-                    <PieChart className="h-4 w-4 text-destructive" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm font-medium">Costes Fijos</CardTitle>
-                    <CardDescription className="text-xs">Gastos operativos</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">
-                  {formatCurrency(breakevenData.costes_fijos)}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Key Metrics */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-success/10 rounded-lg">
-                    <TrendingUp className="h-4 w-4 text-success" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm font-medium">Margen de Contribución</CardTitle>
-                    <CardDescription className="text-xs">Ingresos - Costes Variables</CardDescription>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Nivel de ventas necesario para cubrir todos los costes</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
+                <div className="text-2xl font-bold text-primary">
+                  {formatCurrency(displayData?.punto_equilibrio_valor || 0)}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  en ventas
+                  {displayData?.margen_seguridad_porcentaje && displayData.margen_seguridad_porcentaje < 20 && (
+                    <Badge variant="destructive" className="ml-2 text-xs">Nivel crítico</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-success/10 rounded-lg">
+                      <TrendingUp className="h-4 w-4 text-success" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-medium">Margen de Contribución</CardTitle>
+                      <CardDescription className="text-xs">Por cada euro vendido</CardDescription>
+                    </div>
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Porcentaje que contribuye a cubrir costes fijos</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </CardHeader>
+              <CardContent>
                 <div className="text-2xl font-bold text-success">
-                  {formatCurrency(breakevenData.margen_contribucion_total)}
+                  {formatPercentage(breakevenData.ratio_margen_contribucion)}
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {formatPercentage(breakevenData.ratio_margen_contribucion)} del total de ingresos
-                </div>
+                <div className="text-sm text-muted-foreground">por euro vendido</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Target className="h-4 w-4 text-primary" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-info/10 rounded-lg">
+                      <Shield className="h-4 w-4 text-info" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-medium">Margen de Seguridad</CardTitle>
+                      <CardDescription className="text-xs">Distancia al punto muerto</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-sm font-medium">Punto de Equilibrio</CardTitle>
-                    <CardDescription className="text-xs">Umbral de rentabilidad</CardDescription>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Porcentaje de ventas que puede perderse antes de entrar en pérdidas</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {formatCurrency(breakevenData.punto_equilibrio_valor)}
+                <div className={`text-2xl font-bold ${
+                  (displayData?.margen_seguridad_porcentaje || 0) > 20 ? 'text-success' : 
+                  (displayData?.margen_seguridad_porcentaje || 0) > 10 ? 'text-warning' : 'text-destructive'
+                }`}>
+                  {formatPercentage(displayData?.margen_seguridad_porcentaje || 0)}
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {formatPercentage((breakevenData.punto_equilibrio_valor / breakevenData.ingresos_totales) * 100)} de ingresos actuales
-                </div>
+                <div className="text-sm text-muted-foreground">sobre ventas actuales</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-info/10 rounded-lg">
-                    <Shield className="h-4 w-4 text-info" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-secondary/10 rounded-lg">
+                      <Activity className="h-4 w-4 text-secondary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-medium">Apalancamiento Operativo</CardTitle>
+                      <CardDescription className="text-xs">Sensibilidad al volumen</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-sm font-medium">Margen de Seguridad</CardTitle>
-                    <CardDescription className="text-xs">Distancia al punto muerto</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="text-2xl font-bold text-info">
-                  {formatCurrency(breakevenData.margen_seguridad_valor)}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {formatPercentage(breakevenData.margen_seguridad_porcentaje)} sobre ingresos
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-secondary/10 rounded-lg">
-                    <Activity className="h-4 w-4 text-secondary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm font-medium">Apalancamiento Operativo</CardTitle>
-                    <CardDescription className="text-xs">Sensibilidad al volumen</CardDescription>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Factor que multiplica el impacto de cambios en ventas sobre beneficios</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-secondary">
                   {formatRatio(breakevenData.apalancamiento_operativo)}x
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Factor de apalancamiento
-                </div>
+                <div className="text-sm text-muted-foreground">factor de apalancamiento</div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Analysis Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Interpretación del Análisis
-              </CardTitle>
-              <CardDescription>
-                Evaluación del riesgo operativo y margen de maniobra
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Situación Actual</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Umbral de rentabilidad:</span>
-                      <span className="font-medium">{formatCurrency(breakevenData.punto_equilibrio_valor)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Margen sobre umbral:</span>
-                      <span className={`font-medium ${breakevenData.margen_seguridad_porcentaje > 20 ? 'text-success' : breakevenData.margen_seguridad_porcentaje > 10 ? 'text-warning' : 'text-destructive'}`}>
-                        {formatPercentage(breakevenData.margen_seguridad_porcentaje)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cobertura de costes fijos:</span>
-                      <span className="font-medium">{formatRatio(breakevenData.margen_contribucion_total / breakevenData.costes_fijos)}x</span>
-                    </div>
-                  </div>
-                </div>
+          {/* Interactive Simulator */}
+          <BreakEvenSimulator
+            initialData={{
+              costesFijos: breakevenData.costes_fijos,
+              precioUnitario: breakevenData.ingresos_totales / (breakevenData.ingresos_totales / 100), // Estimated unit price
+              costesVariables: breakevenData.costes_variables,
+              ingresos: breakevenData.ingresos_totales
+            }}
+            onScenarioApply={handleScenarioApply}
+          />
 
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Evaluación de Riesgo</h4>
-                  <div className="space-y-2 text-sm">
-                    {breakevenData.margen_seguridad_porcentaje > 20 && (
-                      <div className="p-3 bg-success/10 rounded-lg text-success">
-                        <strong>Riesgo Bajo:</strong> Margen de seguridad robusto. La empresa puede soportar reducciones significativas en ventas.
+          {/* Break-even Chart */}
+          <BreakEvenChart
+            data={{
+              costesFijos: breakevenData.costes_fijos,
+              precioUnitario: breakevenData.ingresos_totales / (breakevenData.ingresos_totales / 100),
+              costesVariablesPct: (breakevenData.costes_variables / breakevenData.ingresos_totales) * 100,
+              ventasActuales: breakevenData.ingresos_totales / (breakevenData.ingresos_totales / 100)
+            }}
+          />
+          {/* Analysis Summary */}
+          {breakevenData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Interpretación del Análisis
+                </CardTitle>
+                <CardDescription>
+                  Evaluación del riesgo operativo y margen de maniobra
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Situación Actual</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Umbral de rentabilidad:</span>
+                        <span className="font-medium">{formatCurrency(breakevenData.punto_equilibrio_valor)}</span>
                       </div>
-                    )}
-                    {breakevenData.margen_seguridad_porcentaje > 10 && breakevenData.margen_seguridad_porcentaje <= 20 && (
-                      <div className="p-3 bg-warning/10 rounded-lg text-warning">
-                        <strong>Riesgo Moderado:</strong> Margen de seguridad aceptable. Monitorear de cerca las fluctuaciones en ventas.
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Margen sobre umbral:</span>
+                        <span className={`font-medium ${breakevenData.margen_seguridad_porcentaje > 20 ? 'text-success' : breakevenData.margen_seguridad_porcentaje > 10 ? 'text-warning' : 'text-destructive'}`}>
+                          {formatPercentage(breakevenData.margen_seguridad_porcentaje)}
+                        </span>
                       </div>
-                    )}
-                    {breakevenData.margen_seguridad_porcentaje <= 10 && (
-                      <div className="p-3 bg-destructive/10 rounded-lg text-destructive">
-                        <strong>Riesgo Alto:</strong> Margen de seguridad estrecho. Vulnerable a pequeñas reducciones en ventas.
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cobertura de costes fijos:</span>
+                        <span className="font-medium">{formatRatio(breakevenData.margen_contribucion_total / breakevenData.costes_fijos)}x</span>
                       </div>
-                    )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">Evaluación de Riesgo</h4>
+                    <div className="space-y-2 text-sm">
+                      {breakevenData.margen_seguridad_porcentaje > 20 && (
+                        <div className="p-3 bg-success/10 rounded-lg text-success">
+                          <strong>Riesgo Bajo:</strong> Margen de seguridad robusto. La empresa puede soportar reducciones significativas en ventas.
+                        </div>
+                      )}
+                      {breakevenData.margen_seguridad_porcentaje > 10 && breakevenData.margen_seguridad_porcentaje <= 20 && (
+                        <div className="p-3 bg-warning/10 rounded-lg text-warning">
+                          <strong>Riesgo Moderado:</strong> Margen de seguridad aceptable. Monitorear de cerca las fluctuaciones en ventas.
+                        </div>
+                      )}
+                      {breakevenData.margen_seguridad_porcentaje <= 10 && (
+                        <div className="p-3 bg-destructive/10 rounded-lg text-destructive">
+                          <strong>Riesgo Alto:</strong> Margen de seguridad estrecho. Vulnerable a pequeñas reducciones en ventas.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

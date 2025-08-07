@@ -1250,6 +1250,39 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_punto_muerto: {
+        Row: {
+          company_id: string | null
+          margen_contribucion: number | null
+          margen_seguridad: number | null
+          margen_seguridad_valor: number | null
+          periodo: string | null
+          valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periods_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "periods_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "periods_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       vw_pyg_anual: {
         Row: {
           amort: number | null
