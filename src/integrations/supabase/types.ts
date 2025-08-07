@@ -1354,6 +1354,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_ratios_financieros: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          ratio_name: string
+          ratio_value: number
+          benchmark: number
+        }[]
+      }
       get_wc_balance_years: {
         Args: { _company_id: string }
         Returns: {
