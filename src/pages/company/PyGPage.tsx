@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import { Download, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react"
 import { toast } from "sonner";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from "recharts";
+import { logger, logError, logPerformance } from "@/lib/logger";
+import type { PyGAnnualData } from "@/types";
 
 interface PyGAnnualData {
   company_id: string;
@@ -61,7 +63,6 @@ export function PyGPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
-  const [waterfallData, setWaterfallData] = useState<WaterfallDataPoint[]>([]);
 
   // Validate access and load data
   useEffect(() => {
@@ -72,11 +73,14 @@ export function PyGPage() {
         setLoading(true);
         setError(null);
 
+        logger.info(`Validating access for company ${companyId}`, 'PyGPage');
+
         // Validate company access
         const { data: accessData, error: accessError } = await supabase
           .rpc('has_company_access', { _company_id: companyId });
 
         if (accessError) {
+          logError(accessError, 'PyGPage:AccessValidation');
           throw new Error('Error validando acceso');
         }
 
@@ -95,6 +99,7 @@ export function PyGPage() {
           .order('anio', { ascending: false });
 
         if (yearsError) {
+          logError(yearsError, 'PyGPage:YearsLoad');
           throw new Error('Error cargando años disponibles');
         }
 
@@ -107,6 +112,7 @@ export function PyGPage() {
         }
 
       } catch (err) {
+        logError(err, 'PyGPage:InitialLoad');
         setError(err instanceof Error ? err.message : 'Error cargando datos');
       } finally {
         setLoading(false);
@@ -114,7 +120,7 @@ export function PyGPage() {
     };
 
     validateAccessAndLoadData();
-  }, [companyId]);
+  }, [companyId, selectedYear]);
 
   // Load P&G data when year changes
   useEffect(() => {
@@ -123,6 +129,9 @@ export function PyGPage() {
     const loadPyGData = async () => {
       try {
         setLoading(true);
+        const startTime = Date.now();
+
+        logger.info(`Loading P&G data for year ${selectedYear}`, 'PyGPage');
 
         // Load current year data
         const { data: currentYearData, error: currentError } = await supabase
@@ -133,6 +142,7 @@ export function PyGPage() {
           .single();
 
         if (currentError && currentError.code !== 'PGRST116') {
+          logError(currentError, 'PyGPage:CurrentYearLoad');
           throw new Error('Error cargando datos del año actual');
         }
 
@@ -148,18 +158,16 @@ export function PyGPage() {
           .single();
 
         if (previousError && previousError.code !== 'PGRST116') {
-          console.warn('No data found for previous year');
+          logger.warn('No data found for previous year', 'PyGPage');
         }
 
         setPreviousData(previousYearData);
 
-        // Generate waterfall data if current data exists
-        if (currentYearData) {
-          const waterfall = generateWaterfallData(currentYearData);
-          setWaterfallData(waterfall);
-        }
+        const duration = Date.now() - startTime;
+        logPerformance('P&G data load', duration);
 
       } catch (err) {
+        logError(err, 'PyGPage:DataLoad');
         setError(err instanceof Error ? err.message : 'Error cargando datos P&G');
       } finally {
         setLoading(false);
@@ -169,9 +177,12 @@ export function PyGPage() {
     loadPyGData();
   }, [companyId, hasAccess, selectedYear]);
 
-  // Generate table data
-  const generateTableData = (): TableRow[] => {
+  // Memoized table data generation
+  const tableData = useMemo(() => {
     if (!currentData) return [];
+
+    const startTime = Date.now();
+    logger.debug('Generating table data', 'PyGPage');
 
     const concepts = [
       { key: 'ingresos', label: 'Ingresos' },
@@ -192,7 +203,7 @@ export function PyGPage() {
       { key: 'beneficio_neto', label: 'Beneficio Neto' }
     ];
 
-    return concepts.map(concept => {
+    const result = concepts.map(concept => {
       const currentValue = currentData[concept.key as keyof PyGAnnualData] as number;
       const previousValue = previousData?.[concept.key as keyof PyGAnnualData] as number | undefined;
       const delta = previousValue !== undefined ? currentValue - previousValue : null;
@@ -209,28 +220,38 @@ export function PyGPage() {
         delta_pct: deltaPct
       };
     });
-  };
 
-  // Generate waterfall chart data
-  const generateWaterfallData = (data: PyGAnnualData): WaterfallDataPoint[] => {
+    const duration = Date.now() - startTime;
+    logPerformance('Table data generation', duration);
+
+    return result;
+  }, [currentData, previousData]);
+
+  // Memoized waterfall chart data generation
+  const waterfallData = useMemo(() => {
+    if (!currentData) return [];
+
+    const startTime = Date.now();
+    logger.debug('Generating waterfall data', 'PyGPage');
+
     const points: WaterfallDataPoint[] = [];
     let cumulative = 0;
 
     // Ingresos (starting point)
-    cumulative = data.ingresos;
+    cumulative = currentData.ingresos;
     points.push({
       name: 'Ingresos',
-      value: data.ingresos,
+      value: currentData.ingresos,
       cumulative: cumulative,
       type: 'positive',
       color: '#22c55e'
     });
 
     // Coste de ventas (negative)
-    cumulative += data.coste_ventas;
+    cumulative += currentData.coste_ventas;
     points.push({
       name: 'Coste Ventas',
-      value: data.coste_ventas,
+      value: currentData.coste_ventas,
       cumulative: cumulative,
       type: 'negative',
       color: '#ef4444'
@@ -239,146 +260,45 @@ export function PyGPage() {
     // Margen Bruto (subtotal)
     points.push({
       name: 'Margen Bruto',
-      value: data.margen_bruto,
+      value: currentData.margen_bruto,
       cumulative: cumulative,
       type: 'subtotal',
       color: '#3b82f6'
     });
 
     // OPEX (negative)
-    cumulative += data.opex;
+    cumulative += currentData.opex;
     points.push({
       name: 'OPEX',
-      value: data.opex,
+      value: currentData.opex,
       cumulative: cumulative,
       type: 'negative',
       color: '#ef4444'
     });
-
-    // Otros ingresos/gastos operativos
-    if (data.otros_ing_op !== 0) {
-      cumulative += data.otros_ing_op;
-      points.push({
-        name: 'Otros Ing. Op.',
-        value: data.otros_ing_op,
-        cumulative: cumulative,
-        type: 'positive',
-        color: '#22c55e'
-      });
-    }
-
-    if (data.otros_gas_op !== 0) {
-      cumulative += data.otros_gas_op;
-      points.push({
-        name: 'Otros Gas. Op.',
-        value: data.otros_gas_op,
-        cumulative: cumulative,
-        type: 'negative',
-        color: '#ef4444'
-      });
-    }
 
     // EBITDA (subtotal)
     points.push({
       name: 'EBITDA',
-      value: data.ebitda,
+      value: currentData.ebitda,
       cumulative: cumulative,
       type: 'subtotal',
       color: '#3b82f6'
     });
 
-    // Depreciación y Amortización
-    cumulative += data.dep;
-    points.push({
-      name: 'Depreciación',
-      value: data.dep,
-      cumulative: cumulative,
-      type: 'negative',
-      color: '#ef4444'
-    });
-
-    cumulative += data.amort;
-    points.push({
-      name: 'Amortización',
-      value: data.amort,
-      cumulative: cumulative,
-      type: 'negative',
-      color: '#ef4444'
-    });
-
-    // EBIT (subtotal)
-    points.push({
-      name: 'EBIT',
-      value: data.ebit,
-      cumulative: cumulative,
-      type: 'subtotal',
-      color: '#3b82f6'
-    });
-
-    // Resultados financieros
-    if (data.ing_fin !== 0) {
-      cumulative += data.ing_fin;
-      points.push({
-        name: 'Ing. Fin.',
-        value: data.ing_fin,
-        cumulative: cumulative,
-        type: 'positive',
-        color: '#22c55e'
-      });
-    }
-
-    if (data.gas_fin !== 0) {
-      cumulative += data.gas_fin;
-      points.push({
-        name: 'Gas. Fin.',
-        value: data.gas_fin,
-        cumulative: cumulative,
-        type: 'negative',
-        color: '#ef4444'
-      });
-    }
-
-    if (data.extra !== 0) {
-      cumulative += data.extra;
-      points.push({
-        name: 'Extraordinario',
-        value: data.extra,
-        cumulative: cumulative,
-        type: data.extra > 0 ? 'positive' : 'negative',
-        color: data.extra > 0 ? '#22c55e' : '#ef4444'
-      });
-    }
-
-    // BAI (subtotal)
-    points.push({
-      name: 'BAI',
-      value: data.bai,
-      cumulative: cumulative,
-      type: 'subtotal',
-      color: '#3b82f6'
-    });
-
-    // Impuestos
-    cumulative += data.impuestos;
-    points.push({
-      name: 'Impuestos',
-      value: data.impuestos,
-      cumulative: cumulative,
-      type: 'negative',
-      color: '#ef4444'
-    });
-
-    // Beneficio Neto (final)
+    // Final result
     points.push({
       name: 'Beneficio Neto',
-      value: data.beneficio_neto,
-      cumulative: cumulative,
-      type: 'subtotal',
-      color: '#8b5cf6'
+      value: currentData.beneficio_neto,
+      cumulative: currentData.beneficio_neto,
+      type: 'total',
+      color: currentData.beneficio_neto >= 0 ? '#22c55e' : '#ef4444'
     });
 
+    const duration = Date.now() - startTime;
+    logPerformance('Waterfall data generation', duration);
+
     return points;
-  };
+  }, [currentData]);
 
   // Format number for display
   const formatNumber = (value: number): string => {
@@ -397,10 +317,10 @@ export function PyGPage() {
       return;
     }
 
-    const tableData = generateTableData();
+    const tableRows = tableData;
     const csvContent = [
       ['Concepto', 'Actual (€)', '% Ventas', 'Año Anterior (€)', 'Δ (€)', 'Δ (%)'],
-      ...tableData.map(row => [
+      ...tableRows.map(row => [
         row.concepto,
         row.actual.toFixed(2),
         row.porcentaje_ventas.toFixed(1) + '%',
@@ -513,7 +433,7 @@ export function PyGPage() {
     );
   }
 
-  const tableData = generateTableData();
+
 
   return (
     <div className="p-6 space-y-6">
