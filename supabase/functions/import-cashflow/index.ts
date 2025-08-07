@@ -134,17 +134,17 @@ Deno.serve(async (req) => {
 
     switch (tipo) {
       case 'operativo':
-        requiredColumns = ['company_alias', 'periodo', 'flujo_operativo']
+        requiredColumns = ['company_code', 'periodo', 'flujo_operativo']
         valueColumn = 'flujo_operativo'
         tableName = 'cashflows_operativo'
         break
       case 'inversion':
-        requiredColumns = ['company_alias', 'periodo', 'flujo_inversion']
+        requiredColumns = ['company_code', 'periodo', 'flujo_inversion']
         valueColumn = 'flujo_inversion'
         tableName = 'cashflows_inversion'
         break
       case 'financiacion':
-        requiredColumns = ['company_alias', 'periodo', 'flujo_financiacion']
+        requiredColumns = ['company_code', 'periodo', 'flujo_financiacion']
         valueColumn = 'flujo_financiacion'
         tableName = 'cashflows_financiacion'
         break
@@ -170,16 +170,16 @@ Deno.serve(async (req) => {
     }
 
     // Get column indices
-    const companyIndex = headers.indexOf('company_alias')
+    const companyIndex = headers.indexOf('company_code')
     const periodoIndex = headers.indexOf('periodo')
     const valueIndex = headers.indexOf(valueColumn)
 
     // Get companies for mapping
     const { data: companies } = await supabaseAdmin
       .from('companies')
-      .select('id, name')
+      .select('id, company_code')
 
-    const companyMap = new Map(companies?.map(c => [c.name.toLowerCase(), c.id]) || [])
+    const companyMap = new Map(companies?.map(c => [c.company_code, c.id]) || [])
 
     // Process data rows
     let okRows = 0
@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
         continue
       }
 
-      const companyAlias = row[companyIndex]?.toLowerCase()
+      const companyCode = row[companyIndex]
       const periodo = row[periodoIndex]
       const value = parseFloat(row[valueIndex])
 
@@ -206,11 +206,11 @@ Deno.serve(async (req) => {
         continue
       }
 
-      // Map company alias to company_id
-      const companyId = companyMap.get(companyAlias)
+      // Map company code to company_id
+      const companyId = companyMap.get(companyCode)
       if (!companyId) {
         errorRows++
-        errors.push(`Row ${i + 1}: Company '${companyAlias}' not found`)
+        errors.push(`Row ${i + 1}: Company code '${companyCode}' not found`)
         continue
       }
 

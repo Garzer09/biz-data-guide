@@ -392,7 +392,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       link.download = 'balance_financiero_template.csv';
       link.click();
     } else if (templateType === 'cashflow_operativo') {
-      const csvContent = "company_alias,periodo,flujo_operativo\nEmpresa Demo,2024-01,50000\nEmpresa Demo,2024-02,55000\n";
+      const csvContent = "company_code,periodo,flujo_operativo\nEMP_DEMO_2,2024-01,50000\nEMP_DEMO_2,2024-02,55000\n";
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       if (link.download !== undefined) {
@@ -405,7 +405,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         document.body.removeChild(link);
       }
     } else if (templateType === 'cashflow_inversion') {
-      const csvContent = "company_alias,periodo,flujo_inversion\nEmpresa Demo,2024-01,-25000\nEmpresa Demo,2024-02,-30000\n";
+      const csvContent = "company_code,periodo,flujo_inversion\nEMP_DEMO_2,2024-01,-25000\nEMP_DEMO_2,2024-02,-30000\n";
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       if (link.download !== undefined) {
@@ -418,7 +418,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         document.body.removeChild(link);
       }
     } else if (templateType === 'cashflow_financiacion') {
-      const csvContent = "company_alias,periodo,flujo_financiacion\nEmpresa Demo,2024-01,10000\nEmpresa Demo,2024-02,15000\n";
+      const csvContent = "company_code,periodo,flujo_financiacion\nEMP_DEMO_2,2024-01,10000\nEMP_DEMO_2,2024-02,15000\n";
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       if (link.download !== undefined) {

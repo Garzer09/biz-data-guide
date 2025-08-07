@@ -283,6 +283,7 @@ export type Database = {
         Row: {
           accounting_plan: string | null
           cif_nif: string | null
+          company_code: string | null
           coverage: string | null
           creado_en: string | null
           created_at: string
@@ -298,6 +299,7 @@ export type Database = {
         Insert: {
           accounting_plan?: string | null
           cif_nif?: string | null
+          company_code?: string | null
           coverage?: string | null
           creado_en?: string | null
           created_at?: string
@@ -313,6 +315,7 @@ export type Database = {
         Update: {
           accounting_plan?: string | null
           cif_nif?: string | null
+          company_code?: string | null
           coverage?: string | null
           creado_en?: string | null
           created_at?: string
