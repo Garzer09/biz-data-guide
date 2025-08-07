@@ -14,3 +14,15 @@ verify_jwt = true
 
 [functions.import-balance]
 verify_jwt = true
+
+[functions.import-pyg-analytic]
+verify_jwt = true
+
+[functions.import-ratios]
+verify_jwt = true
+
+[functions.import-cashflow]
+verify_jwt = true
+
+[functions.import-debts]
+verify_jwt = true
