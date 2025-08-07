@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Plus, DollarSign, Building2, AlertCircle } from "lucide-react";
 
@@ -134,6 +135,31 @@ export function CashflowPage() {
     }
   };
 
+  const formatCurrency = (value: number) => {
+    const absValue = Math.abs(value);
+    if (absValue >= 1000000) {
+      return `€${(value / 1000000).toFixed(1)}M`;
+    } else if (absValue >= 1000) {
+      return `€${(value / 1000).toFixed(0)}K`;
+    } else {
+      return `€${value.toLocaleString()}`;
+    }
+  };
+
+  const calculateSums = () => {
+    const operativoSum = cashflowOperativo.reduce((sum, item) => sum + (item.flujo_operativo || 0), 0);
+    const inversionSum = cashflowInversion.reduce((sum, item) => sum + (item.flujo_inversion || 0), 0);
+    const financiacionSum = cashflowFinanciacion.reduce((sum, item) => sum + (item.flujo_financiacion || 0), 0);
+    const flujoNeto = operativoSum + inversionSum + financiacionSum;
+
+    return {
+      operativo: operativoSum,
+      inversion: inversionSum,
+      financiacion: financiacionSum,
+      neto: flujoNeto
+    };
+  };
+
   const handleExport = () => {
     toast({
       title: "Exportar datos",
@@ -147,6 +173,8 @@ export function CashflowPage() {
       description: "Funcionalidad para añadir período en desarrollo",
     });
   };
+
+  const sums = calculateSums();
 
   if (loading) {
     return (
@@ -220,6 +248,65 @@ export function CashflowPage() {
             Añadir período
           </Button>
         </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {isLoading ? (
+          <>
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </>
+        ) : (
+          <>
+            <MetricCard
+              title="Flujo Operativo"
+              value={formatCurrency(sums.operativo).replace('€', '')}
+              unit="€"
+              description="Actividades principales del negocio"
+              trend={{
+                value: "11.5%",
+                isPositive: sums.operativo >= 0,
+                label: "sobre ventas"
+              }}
+            />
+            <MetricCard
+              title="Flujo de Inversión"
+              value={formatCurrency(sums.inversion).replace('€', '')}
+              unit="€"
+              description="Adquisiciones y ventas de activos"
+              trend={{
+                value: "8.2%",
+                isPositive: sums.inversion >= 0,
+                label: "sobre activos"
+              }}
+            />
+            <MetricCard
+              title="Flujo de Financiación"
+              value={formatCurrency(sums.financiacion).replace('€', '')}
+              unit="€"
+              description="Operaciones con accionistas y acreedores"
+              trend={{
+                value: "Personalizado",
+                isPositive: sums.financiacion >= 0,
+                label: "indicador específico"
+              }}
+            />
+            <MetricCard
+              title="Flujo Neto"
+              value={formatCurrency(sums.neto).replace('€', '')}
+              unit="€"
+              description="Resultado total del período"
+              trend={{
+                value: sums.neto >= 0 ? "Positivo" : "Negativo",
+                isPositive: sums.neto >= 0,
+                label: "flujo total"
+              }}
+            />
+          </>
+        )}
       </div>
 
       {/* Error Alert */}
