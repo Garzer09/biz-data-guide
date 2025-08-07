@@ -6,6 +6,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NofSimulator } from "@/components/nof/nof-simulator";
+import { AccionesRecomendadas } from "@/components/nof/acciones-recomendadas";
 import { YearSelector } from "@/components/dashboard/year-selector";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -44,6 +47,12 @@ interface NofRatio {
   interpretation: string;
 }
 
+interface AgingData {
+  rango: string;
+  importe: number;
+  pct_total: number;
+}
+
 export function NofPage() {
   const { companyId } = useParams();
   const { toast } = useToast();
@@ -54,6 +63,7 @@ export function NofPage() {
   const [summary, setSummary] = useState<NofSummary | null>(null);
   const [components, setComponents] = useState<NofComponent[]>([]);
   const [ratios, setRatios] = useState<NofRatio[]>([]);
+  const [agingData, setAgingData] = useState<AgingData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -171,9 +181,24 @@ export function NofPage() {
   };
 
   const handleSimulate = () => {
+    // Simulator is now embedded in the page
     toast({
-      title: "Función no disponible", 
-      description: "El simulador estará disponible próximamente"
+      title: "Simulador activo",
+      description: "Usa los controles del simulador para optimizar tu NOF"
+    });
+  };
+
+  const handlePlanGenerate = (results: any) => {
+    toast({
+      title: "Plan generado",
+      description: `Liberación estimada: ${formatCurrency(results.cashLiberation)}`
+    });
+  };
+
+  const handleActionSelect = (action: any) => {
+    toast({
+      title: "Acción seleccionada",
+      description: `${action.title} - ${action.timeline}`
     });
   };
 
@@ -433,7 +458,159 @@ export function NofPage() {
             </CardContent>
           </Card>
 
-          {/* Ratios Analysis */}
+          {/* NOF Simulator */}
+          <NofSimulator
+            currentNof={summary.nof_total}
+            currentCycleDays={summary.dias_ciclo}
+            annualRevenue={summary.nof_total * 8} // Estimated based on typical NOF/Revenue ratio
+            onPlanGenerate={handlePlanGenerate}
+          />
+
+          {/* Aging Analysis and Recommendations */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="cobros" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="cobros">Gestión de Cobros</TabsTrigger>
+                  <TabsTrigger value="inventarios">Gestión de Inventarios</TabsTrigger>
+                  <TabsTrigger value="pagos">Gestión de Pagos</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="cobros" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Aging de Cuentas por Cobrar</CardTitle>
+                      <CardDescription>
+                        Distribución de la cartera de clientes por antigüedad
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Mock aging data - replace with real data */}
+                        {[
+                          { rango: "0-30 días", importe: summary.clientes * 0.6, pct: 60 },
+                          { rango: "31-60 días", importe: summary.clientes * 0.25, pct: 25 },
+                          { rango: "61-90 días", importe: summary.clientes * 0.1, pct: 10 },
+                          { rango: ">90 días", importe: summary.clientes * 0.05, pct: 5 }
+                        ].map((item, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div>
+                              <span className="font-medium">{item.rango}</span>
+                              <div className="text-sm text-muted-foreground">
+                                {item.pct}% del total
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold">{formatCurrency(item.importe)}</div>
+                              <div className={`text-sm ${
+                                index === 0 ? 'text-success' : 
+                                index === 1 ? 'text-warning' : 'text-destructive'
+                              }`}>
+                                {index === 0 ? 'Excelente' : 
+                                 index === 1 ? 'Normal' : 'Revisar'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="inventarios" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Análisis de Inventarios</CardTitle>
+                      <CardDescription>
+                        Rotación y gestión del stock operativo
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Mock inventory analysis */}
+                        {[
+                          { categoria: "Stock Rápido", valor: summary.inventario * 0.4, rotacion: "12x/año" },
+                          { categoria: "Stock Medio", valor: summary.inventario * 0.4, rotacion: "6x/año" },
+                          { categoria: "Stock Lento", valor: summary.inventario * 0.15, rotacion: "2x/año" },
+                          { categoria: "Stock Muerto", valor: summary.inventario * 0.05, rotacion: "0x/año" }
+                        ].map((item, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div>
+                              <span className="font-medium">{item.categoria}</span>
+                              <div className="text-sm text-muted-foreground">
+                                Rotación: {item.rotacion}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold">{formatCurrency(item.valor)}</div>
+                              <div className={`text-sm ${
+                                index === 0 ? 'text-success' : 
+                                index === 1 ? 'text-primary' : 
+                                index === 2 ? 'text-warning' : 'text-destructive'
+                              }`}>
+                                {index === 0 ? 'Óptimo' : 
+                                 index === 1 ? 'Normal' : 
+                                 index === 2 ? 'Mejorar' : 'Crítico'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="pagos" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Gestión de Pagos</CardTitle>
+                      <CardDescription>
+                        Análisis de términos y aprovechamiento de financiación
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Mock payment analysis */}
+                        {[
+                          { proveedor: "Proveedores A", importe: summary.proveedores * 0.4, terminos: "30 días", aprovechamiento: "100%" },
+                          { proveedor: "Proveedores B", importe: summary.proveedores * 0.3, terminos: "45 días", aprovechamiento: "80%" },
+                          { proveedor: "Proveedores C", importe: summary.proveedores * 0.2, terminos: "60 días", aprovechamiento: "90%" },
+                          { proveedor: "Otros", importe: summary.proveedores * 0.1, terminos: "15 días", aprovechamiento: "50%" }
+                        ].map((item, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div>
+                              <span className="font-medium">{item.proveedor}</span>
+                              <div className="text-sm text-muted-foreground">
+                                Términos: {item.terminos}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold">{formatCurrency(item.importe)}</div>
+                              <div className={`text-sm ${
+                                parseFloat(item.aprovechamiento) > 90 ? 'text-success' : 
+                                parseFloat(item.aprovechamiento) > 70 ? 'text-warning' : 'text-destructive'
+                              }`}>
+                                Aprovechamiento: {item.aprovechamiento}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+            
+            {/* Recommendations Sidebar */}
+            <div>
+              <AccionesRecomendadas
+                nofTotal={summary.nof_total}
+                diasCiclo={summary.dias_ciclo}
+                onActionSelect={handleActionSelect}
+              />
+            </div>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
