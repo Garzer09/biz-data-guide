@@ -21,19 +21,15 @@ interface ImportJob {
   company_id: string;
   tipo: string;
   estado: string;
-  total_rows: number;
-  ok_rows: number;
-  error_rows: number;
+  storage_path: string;
+  resumen: any;
   creado_en: string;
+  actualizado_en: string;
   companies: Company;
 }
 
 const importTypes = [
-  { value: 'pyg_annual', label: 'P&G Anual' },
-  { value: 'income', label: 'Cuenta P&G' },
-  { value: 'balance', label: 'Balance' },
-  { value: 'cashflow', label: 'Flujos de Caja' },
-  { value: 'ratios', label: 'Ratios Financieros' }
+  { value: 'pyg_anual', label: 'P&G Anual' }
 ];
 
 export function ImportDataManagement() {
@@ -73,10 +69,10 @@ export function ImportDataManagement() {
           company_id,
           tipo,
           estado,
-          total_rows,
-          ok_rows,
-          error_rows,
+          storage_path,
+          resumen,
           creado_en,
+          actualizado_en,
           companies:company_id (id, name)
         `)
         .order('creado_en', { ascending: false })
@@ -116,11 +112,10 @@ export function ImportDataManagement() {
         .from('import_jobs')
         .insert({
           company_id: selectedCompanyId,
-          tipo: selectedType,
-          estado: 'PENDING',
-          total_rows: 0,
-          ok_rows: 0,
-          error_rows: 0
+          tipo: 'pyg_anual',
+          storage_path: 'pending', // Will be updated after file upload
+          estado: 'pending',
+          resumen: null
         })
         .select()
         .single();
@@ -138,16 +133,13 @@ export function ImportDataManagement() {
 
       if (uploadError) throw uploadError;
 
-      // Create import file record
-      const { error: fileRecordError } = await supabase
-        .from('import_files')
-        .insert({
-          job_id: jobData.id,
-          storage_path: filePath,
-          subido_por: (await supabase.auth.getUser()).data.user?.id
-        });
+      // Update job with storage path
+      const { error: updateError } = await supabase
+        .from('import_jobs')
+        .update({ storage_path: filePath })
+        .eq('id', jobData.id);
 
-      if (fileRecordError) throw fileRecordError;
+      if (updateError) throw updateError;
 
       toast({
         title: "Archivo subido",
@@ -175,7 +167,7 @@ export function ImportDataManagement() {
     try {
       setProcessing(true);
       
-      if (jobType === 'pyg_annual') {
+      if (jobType === 'pyg_anual') {
         const { error } = await supabase.functions.invoke('import-pyg-anual', {
           body: { job_id: jobId }
         });
@@ -209,13 +201,13 @@ export function ImportDataManagement() {
 
   const getStatusBadge = (estado: string) => {
     switch (estado) {
-      case 'PENDING':
+      case 'pending':
         return <Badge variant="outline" className="text-yellow-600">Pendiente</Badge>;
-      case 'PROCESSING':
+      case 'processing':
         return <Badge variant="outline" className="text-blue-600">Procesando</Badge>;
-      case 'COMPLETED':
+      case 'done':
         return <Badge className="bg-green-600 text-white hover:bg-green-700">Completado</Badge>;
-      case 'ERROR':
+      case 'failed':
         return <Badge variant="destructive">Error</Badge>;
       default:
         return <Badge variant="outline">{estado}</Badge>;
@@ -337,22 +329,26 @@ export function ImportDataManagement() {
                 
                 <div className="flex items-center gap-4">
                   <div className="text-right text-sm">
-                    <div className="flex items-center gap-1 text-green-600">
-                      <CheckCircle className="h-3 w-3" />
-                      {job.ok_rows} exitosos
-                    </div>
-                    {job.error_rows > 0 && (
-                      <div className="flex items-center gap-1 text-red-600">
-                        <AlertCircle className="h-3 w-3" />
-                        {job.error_rows} errores
-                      </div>
+                    {job.resumen && (
+                      <>
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="h-3 w-3" />
+                          {job.resumen.ok_rows?.length || 0} exitosos
+                        </div>
+                        {(job.resumen.error_rows?.length || 0) > 0 && (
+                          <div className="flex items-center gap-1 text-red-600">
+                            <AlertCircle className="h-3 w-3" />
+                            {job.resumen.error_rows?.length || 0} errores
+                          </div>
+                        )}
+                        <div className="text-muted-foreground">
+                          Total: {(job.resumen.ok_rows?.length || 0) + (job.resumen.error_rows?.length || 0)}
+                        </div>
+                      </>
                     )}
-                    <div className="text-muted-foreground">
-                      Total: {job.total_rows}
-                    </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {job.estado === 'PENDING' && (
+                    {job.estado === 'pending' && (
                       <Button
                         size="sm"
                         variant="outline"
