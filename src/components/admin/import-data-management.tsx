@@ -267,7 +267,13 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
 
       toast({
         title: "Procesamiento completado",
-        description: `Estado: ${data.status}. ${data.summary.ok_rows} filas exitosas, ${data.summary.error_rows} errores.`,
+        description: (() => {
+          if (job?.tipo?.startsWith('cashflow_')) {
+            return `Estado: ${data.success ? 'Exitoso' : 'Error'}. ${data.results?.ok_rows || 0} filas exitosas, ${data.results?.error_rows || 0} errores.`;
+          } else {
+            return `Estado: ${data.status}. ${data.summary?.ok_rows || 0} filas exitosas, ${data.summary?.error_rows || 0} errores.`;
+          }
+        })(),
       });
 
     } catch (error: any) {
