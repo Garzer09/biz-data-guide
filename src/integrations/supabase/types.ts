@@ -1297,6 +1297,87 @@ export type Database = {
           },
         ]
       }
+      vw_ratios_categorias: {
+        Row: {
+          anio: string | null
+          apalancamiento: number | null
+          capitalizacion: number | null
+          capitalizacion_benchmark: number | null
+          cobertura_intereses: number | null
+          cobertura_intereses_benchmark: number | null
+          company_id: string | null
+          company_name: string | null
+          deuda_ebitda: number | null
+          deuda_ebitda_benchmark: number | null
+          liquidez_corriente: number | null
+          liquidez_corriente_benchmark: number | null
+          periodo: string | null
+          ratio_endeudamiento: number | null
+          ratio_endeudamiento_benchmark: number | null
+          roa: number | null
+          roa_benchmark: number | null
+          roe: number | null
+          roe_benchmark: number | null
+          rotacion_activos: number | null
+          rotacion_activos_benchmark: number | null
+        }
+        Relationships: []
+      }
+      vw_ratios_empresa: {
+        Row: {
+          anio: string | null
+          benchmark: number | null
+          company_id: string | null
+          created_at: string | null
+          desviacion_pct: number | null
+          evaluacion: string | null
+          nombre: string | null
+          periodo: string | null
+          updated_at: string | null
+          valor: number | null
+        }
+        Insert: {
+          anio?: string | null
+          benchmark?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          desviacion_pct?: never
+          evaluacion?: never
+          nombre?: string | null
+          periodo?: string | null
+          updated_at?: string | null
+          valor?: number | null
+        }
+        Update: {
+          anio?: string | null
+          benchmark?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          desviacion_pct?: never
+          evaluacion?: never
+          nombre?: string | null
+          periodo?: string | null
+          updated_at?: string | null
+          valor?: number | null
+        }
+        Relationships: []
+      }
+      vw_ratios_empresa_latest: {
+        Row: {
+          anio: string | null
+          benchmark: number | null
+          company_id: string | null
+          company_name: string | null
+          created_at: string | null
+          desviacion_pct: number | null
+          evaluacion: string | null
+          nombre: string | null
+          periodo: string | null
+          updated_at: string | null
+          valor: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       allocate_pyg: {
