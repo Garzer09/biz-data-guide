@@ -115,19 +115,19 @@ export type Database = {
         Row: {
           concepto_codigo: string
           concepto_nombre: string
-          grupo: string | null
+          grupo: string
           obligatorio: boolean
         }
         Insert: {
           concepto_codigo: string
           concepto_nombre: string
-          grupo?: string | null
+          grupo: string
           obligatorio?: boolean
         }
         Update: {
           concepto_codigo?: string
           concepto_nombre?: string
-          grupo?: string | null
+          grupo?: string
           obligatorio?: boolean
         }
         Relationships: []
