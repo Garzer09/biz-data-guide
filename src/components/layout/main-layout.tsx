@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { MainDashboard } from "@/components/dashboard/main-dashboard";
-import { CompaniesManagement } from "@/components/companies/companies-management";
+import { CompaniesManagement } from "@/components/admin/companies-management";
 
 export function MainLayout() {
   const [currentPage, setCurrentPage] = useState("admin-panel");
