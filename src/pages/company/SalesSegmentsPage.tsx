@@ -53,13 +53,57 @@ export function SalesSegmentsPage() {
 
   // Fetch available years on mount
   useEffect(() => {
+    const fetchYears = async () => {
+      try {
+        const { data: yearsData, error } = await supabase
+          .from('vw_pyg_analytic_segmentos')
+          .select('anio')
+          .eq('company_id', companyId)
+          .order('anio', { ascending: false });
+
+        if (error) throw error;
+
+        const uniqueYears = [...new Set(yearsData?.map(item => item.anio) || [])];
+        setAvailableYears(uniqueYears);
+        
+        if (uniqueYears.length > 0 && !selectedYear) {
+          setSelectedYear(uniqueYears[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching years:', error);
+        setError('Error cargando años disponibles');
+      }
+    };
+
     if (companyId) {
       fetchYears();
     }
-  }, [companyId]);
+  }, [companyId, selectedYear]);
 
   // Fetch data when year changes
   useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const { data, error } = await supabase
+          .from('vw_pyg_analytic_segmentos')
+          .select('*')
+          .eq('company_id', companyId)
+          .eq('anio', selectedYear);
+
+        if (error) throw error;
+
+        setSalesData(data || []);
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+        setError('Error cargando datos de ventas');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (companyId && selectedYear) {
       fetchSalesData();
     }

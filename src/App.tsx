@@ -17,6 +17,9 @@ import DebtPoolPage from './pages/DebtPoolPage';
 import { DebtServicePage } from './pages/company/DebtServicePage';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
+import { ErrorBoundary } from './components/error-boundary';
+import { DebugPanel } from './components/debug-panel';
+import { logger } from './lib/logger';
 import './App.css';
 
 function App() {
@@ -34,7 +37,23 @@ function App() {
   }
 
   return (
-    <Routes>
+    <ErrorBoundary 
+      showDetails={import.meta.env.MODE === 'development'}
+      onError={(error, errorInfo) => {
+        // Log to our centralized logging system
+        logger.error('Application error caught by boundary', 'App', {
+          error: {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          },
+          componentStack: errorInfo.componentStack,
+          userId: user?.id,
+          userRole: isAdmin ? 'admin' : 'user'
+        });
+      }}
+    >
+      <Routes>
       <Route 
         path="/auth" 
         element={user ? <Navigate to="/" replace /> : <Auth />} 
@@ -185,6 +204,8 @@ function App() {
       
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <DebugPanel />
+    </ErrorBoundary>
   );
 }
 
