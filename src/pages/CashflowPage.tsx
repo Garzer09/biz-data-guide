@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { YearSelector } from "@/components/dashboard/year-selector";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Info, Calculator, Eye, Play, Clock, Target, Zap } from "lucide-react";
 
@@ -35,14 +36,12 @@ export function CashflowPage() {
   const { toast } = useToast();
 
   // State
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [years, setYears] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
-  const [cashflowOperativo, setCashflowOperativo] = useState<CashflowData[]>([]);
-  const [cashflowInversion, setCashflowInversion] = useState<CashflowData[]>([]);
-  const [cashflowFinanciacion, setCashflowFinanciacion] = useState<CashflowData[]>([]);
+  const [operativoData, setOperativoData] = useState<CashflowData[]>([]);
+  const [inversionData, setInversionData] = useState<CashflowData[]>([]);
+  const [financiacionData, setFinanciacionData] = useState<CashflowData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Simulator state
@@ -50,106 +49,79 @@ export function CashflowPage() {
   const [deltaPago, setDeltaPago] = useState([0]);
   const [deltaInventario, setDeltaInventario] = useState([0]);
 
-  // Check access and load initial data
+  // Load initial data
   useEffect(() => {
-    if (companyId && user) {
-      checkAccess();
+    if (companyId) {
+      fetchYears();
     }
-  }, [companyId, user]);
+  }, [companyId]);
 
   // Load cashflow data when year changes
   useEffect(() => {
-    if (selectedYear && hasAccess) {
-      fetchCashflowData();
+    if (selectedYear) {
+      fetchCashflows();
     }
-  }, [selectedYear, hasAccess]);
+  }, [selectedYear]);
 
-  const checkAccess = async () => {
+  const fetchYears = useCallback(async () => {
     if (!companyId) return;
 
+    setIsLoading(true);
     try {
-      const { data, error } = await supabase.rpc('has_company_access', {
+      const { data: yearList, error: errYears } = await supabase.rpc('get_cashflow_years', {
         _company_id: companyId
       });
 
-      if (error) throw error;
-      
-      setHasAccess(data);
-      
-      if (data) {
-        await fetchAvailableYears();
+      if (errYears) {
+        setError(errYears.message);
+        return;
       }
-    } catch (error) {
-      console.error('Error checking access:', error);
-      setHasAccess(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAvailableYears = async () => {
-    if (!companyId) return;
-
-    try {
-      const { data, error } = await supabase.rpc('get_cashflow_years', {
-        _company_id: companyId
-      });
-
-      if (error) throw error;
       
-      const years = data?.map((item: any) => item.anio) || [];
-      setAvailableYears(years);
+      const years = yearList?.map((item: any) => item.anio) || [];
+      setYears(years);
       
       if (years.length > 0) {
         setSelectedYear(years[0]); // Select most recent year
       }
     } catch (error) {
       console.error('Error fetching years:', error);
+      setError('Error cargando años disponibles');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [companyId]);
 
-  const fetchCashflowData = async () => {
+  const fetchCashflows = useCallback(async () => {
     if (!companyId || !selectedYear) return;
 
     setIsLoading(true);
     setError(null);
     
     try {
-      // Fetch all cashflow data in parallel
-      const [operativoResult, inversionResult, financiacionResult] = await Promise.all([
-        supabase.rpc('get_cashflow_operativo', {
-          _company_id: companyId,
-          _anio: selectedYear
-        }),
-        supabase.rpc('get_cashflow_inversion', {
-          _company_id: companyId,
-          _anio: selectedYear
-        }),
-        supabase.rpc('get_cashflow_financiacion', {
-          _company_id: companyId,
-          _anio: selectedYear
-        })
+      const [
+        { data: op, error: e1 },
+        { data: inv, error: e2 },
+        { data: fin, error: e3 }
+      ] = await Promise.all([
+        supabase.rpc('get_cashflow_operativo', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_cashflow_inversion', { _company_id: companyId, _anio: selectedYear }),
+        supabase.rpc('get_cashflow_financiacion', { _company_id: companyId, _anio: selectedYear }),
       ]);
 
-      // Check for errors
-      if (operativoResult.error || inversionResult.error || financiacionResult.error) {
-        throw new Error('Error cargando flujos de caja');
+      if (e1 || e2 || e3) {
+        setError(e1?.message || e2?.message || e3?.message || 'Error cargando datos');
+      } else {
+        setOperativoData(op || []);
+        setInversionData(inv || []);
+        setFinanciacionData(fin || []);
       }
-
-      setCashflowOperativo(operativoResult.data || []);
-      setCashflowInversion(inversionResult.data || []);
-      setCashflowFinanciacion(financiacionResult.data || []);
-
     } catch (error) {
       console.error('Error fetching cashflow data:', error);
       setError('Error cargando flujos de caja');
-      setCashflowOperativo([]);
-      setCashflowInversion([]);
-      setCashflowFinanciacion([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [companyId, selectedYear]);
 
   const formatCurrency = (value: number) => {
     const absValue = Math.abs(value);
@@ -163,9 +135,9 @@ export function CashflowPage() {
   };
 
   const calculateSums = () => {
-    const operativoSum = cashflowOperativo.reduce((sum, item) => sum + (item.flujo_operativo || 0), 0);
-    const inversionSum = cashflowInversion.reduce((sum, item) => sum + (item.flujo_inversion || 0), 0);
-    const financiacionSum = cashflowFinanciacion.reduce((sum, item) => sum + (item.flujo_financiacion || 0), 0);
+    const operativoSum = operativoData.reduce((sum, item) => sum + (item.flujo_operativo || 0), 0);
+    const inversionSum = inversionData.reduce((sum, item) => sum + (item.flujo_inversion || 0), 0);
+    const financiacionSum = financiacionData.reduce((sum, item) => sum + (item.flujo_financiacion || 0), 0);
     const flujoNeto = operativoSum + inversionSum + financiacionSum;
 
     return {
@@ -922,23 +894,71 @@ export function CashflowPage() {
     return `€${(value / 1000).toFixed(0)}K`;
   };
 
-  const handleExport = () => {
-    toast({
-      title: "Exportar datos",
-      description: "Funcionalidad de exportación en desarrollo",
-    });
-  };
+  const handleExport = useCallback(() => {
+    try {
+      // Combine all datasets for export
+      const combinedData = [
+        ...operativoData.map(item => ({ ...item, tipo: 'operativo' })),
+        ...inversionData.map(item => ({ ...item, tipo: 'inversion' })),
+        ...financiacionData.map(item => ({ ...item, tipo: 'financiacion' }))
+      ];
+
+      // Create CSV content
+      const headers = ['periodo', 'tipo', 'flujo_operativo', 'flujo_inversion', 'flujo_financiacion'];
+      const csvContent = [
+        headers.join(','),
+        ...combinedData.map(row => [
+          row.periodo,
+          row.tipo || '',
+          row.flujo_operativo || '',
+          row.flujo_inversion || '',
+          row.flujo_financiacion || ''
+        ].join(','))
+      ].join('\n');
+
+      // Download CSV
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cashflow-${selectedYear}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Datos exportados",
+        description: `Archivo cashflow-${selectedYear}.csv descargado exitosamente`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error al exportar",
+        description: "No se pudo descargar el archivo",
+        variant: "destructive"
+      });
+    }
+  }, [operativoData, inversionData, financiacionData, selectedYear, toast]);
 
   const handleAddPeriod = () => {
     toast({
       title: "Añadir período",
-      description: "Funcionalidad para añadir período en desarrollo",
+      description: "Funcionalidad para subir CSV en desarrollo",
     });
   };
 
   const sums = calculateSums();
 
-  if (loading) {
+  // Show error alert if there is one
+  const errorAlert = error && (
+    <Alert variant="destructive">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>{error}</AlertDescription>
+    </Alert>
+  );
+
+  // Show loading skeletons for main content
+  if (isLoading && years.length === 0) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -958,19 +978,7 @@ export function CashflowPage() {
     );
   }
 
-  if (hasAccess === false) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Sin acceso</h3>
-          <p className="text-muted-foreground">No tienes permisos para ver los datos de esta empresa</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (availableYears.length === 0) {
+  if (years.length === 0 && !isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -991,16 +999,11 @@ export function CashflowPage() {
           <p className="text-muted-foreground">Análisis de flujos operativos, de inversión y financiación</p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-32" aria-label="Seleccionar año">
-              <SelectValue placeholder="Año" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year}>{year}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <YearSelector
+            selectedYear={selectedYear}
+            onYearChange={setSelectedYear}
+            availableYears={years}
+          />
           <Button onClick={handleExport} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -1072,11 +1075,24 @@ export function CashflowPage() {
       </div>
 
       {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      {errorAlert}
+
+      {/* Loading state for main content */}
+      {isLoading && selectedYear && (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Skeleton className="h-96" />
+            <Skeleton className="h-96" />
+          </div>
+          <Skeleton className="h-64" />
+          <Skeleton className="h-96" />
+        </div>
       )}
 
       {/* Charts Section */}
@@ -1371,8 +1387,8 @@ export function CashflowPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {cashflowOperativo.length > 0 ? (
-                  cashflowOperativo.map((item) => (
+                {operativoData.length > 0 ? (
+                  operativoData.map((item) => (
                     <div key={item.periodo} className="flex justify-between">
                       <span className="text-sm text-muted-foreground">{item.periodo}</span>
                       <span className="font-medium">€{item.flujo_operativo?.toLocaleString() || '0'}</span>
@@ -1404,8 +1420,8 @@ export function CashflowPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {cashflowInversion.length > 0 ? (
-                  cashflowInversion.map((item) => (
+                {inversionData.length > 0 ? (
+                  inversionData.map((item) => (
                     <div key={item.periodo} className="flex justify-between">
                       <span className="text-sm text-muted-foreground">{item.periodo}</span>
                       <span className="font-medium">€{item.flujo_inversion?.toLocaleString() || '0'}</span>
@@ -1437,8 +1453,8 @@ export function CashflowPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {cashflowFinanciacion.length > 0 ? (
-                  cashflowFinanciacion.map((item) => (
+                {financiacionData.length > 0 ? (
+                  financiacionData.map((item) => (
                     <div key={item.periodo} className="flex justify-between">
                       <span className="text-sm text-muted-foreground">{item.periodo}</span>
                       <span className="font-medium">€{item.flujo_financiacion?.toLocaleString() || '0'}</span>
