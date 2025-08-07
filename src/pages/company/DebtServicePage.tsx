@@ -32,7 +32,7 @@ interface StressTestData {
   interest_adjustment: number;
 }
 
-export default function DebtServicePage() {
+export function DebtServicePage() {
   const { companyId } = useParams<{ companyId: string }>();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [periods, setPeriods] = useState<string[]>([]);
@@ -449,3 +449,5 @@ export default function DebtServicePage() {
     </div>
   );
 }
+
+export default DebtServicePage;
