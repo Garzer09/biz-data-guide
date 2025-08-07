@@ -489,32 +489,41 @@ export type Database = {
       }
       import_jobs: {
         Row: {
+          actualizado_en: string
           company_id: string
           creado_en: string
           error_rows: number | null
           estado: string
           id: string
           ok_rows: number | null
+          resumen: Json | null
+          storage_path: string
           tipo: string
           total_rows: number | null
         }
         Insert: {
+          actualizado_en?: string
           company_id: string
           creado_en?: string
           error_rows?: number | null
           estado?: string
           id?: string
           ok_rows?: number | null
+          resumen?: Json | null
+          storage_path: string
           tipo: string
           total_rows?: number | null
         }
         Update: {
+          actualizado_en?: string
           company_id?: string
           creado_en?: string
           error_rows?: number | null
           estado?: string
           id?: string
           ok_rows?: number | null
+          resumen?: Json | null
+          storage_path?: string
           tipo?: string
           total_rows?: number | null
         }
