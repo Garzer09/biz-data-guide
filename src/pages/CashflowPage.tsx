@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/hooks/use-toast";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { Download, Plus, DollarSign, Building2, AlertCircle } from "lucide-react";
 
 interface CashflowData {
@@ -269,6 +269,59 @@ export function CashflowPage() {
     }
   };
 
+  const getOrigenFondosData = () => {
+    const sums = calculateSums();
+    
+    // Placeholder values - in real implementation these would come from additional data
+    const fco = Math.max(0, sums.operativo); // Flujo de caja operativo (only positive)
+    const nuevaFinanciacion = Math.max(0, sums.financiacion); // Nueva financiación (only positive)
+    const desinversiones = 15000; // Placeholder for asset sales
+    
+    return [
+      { name: 'FCO', value: fco, color: '#10b981' },
+      { name: 'Nueva Financiación', value: nuevaFinanciacion, color: '#3b82f6' },
+      { name: 'Desinversiones', value: desinversiones, color: '#8b5cf6' }
+    ].filter(item => item.value > 0); // Only show positive values
+  };
+
+  const getAplicacionFondosData = () => {
+    const sums = calculateSums();
+    
+    // Placeholder values - in real implementation these would come from additional data
+    const inversiones = Math.abs(Math.min(0, sums.inversion)); // Inversiones (absolute value of negative investment)
+    const amortizaciones = 25000; // Placeholder
+    const dividendos = 20000; // Placeholder
+    const incrementoTesoreria = 30000; // Placeholder
+    
+    return [
+      { name: 'Inversiones', value: inversiones, color: '#ef4444' },
+      { name: 'Amortizaciones', value: amortizaciones, color: '#f59e0b' },
+      { name: 'Dividendos', value: dividendos, color: '#ec4899' },
+      { name: 'Incremento Tesorería', value: incrementoTesoreria, color: '#06b6d4' }
+    ].filter(item => item.value > 0); // Only show positive values
+  };
+
+  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight="bold"
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
   const formatYAxis = (value: number) => {
     return `€${(value / 1000).toFixed(0)}K`;
   };
@@ -430,51 +483,155 @@ export function CashflowPage() {
         </Alert>
       )}
 
-      {/* Waterfall Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Análisis Waterfall – Generación y Aplicación de Fondos
-          </CardTitle>
-          <CardDescription>Flujo de efectivo desde beneficio hasta flujo neto</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center h-80">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart
-                data={getWaterfallData()}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                  interval={0}
-                />
-                <YAxis 
-                  tickFormatter={formatYAxis}
-                />
-                <Tooltip 
-                  formatter={(value: number) => [`€${value.toLocaleString()}`, 'Importe']}
-                  labelStyle={{ color: '#000' }}
-                />
-                <Bar dataKey="cumulative" name="Acumulado">
-                  {getWaterfallData().map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={getBarColor(entry.type)} />
+      {/* Charts Section */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Waterfall Chart */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Análisis Waterfall – Generación y Aplicación de Fondos
+              </CardTitle>
+              <CardDescription>Flujo de efectivo desde beneficio hasta flujo neto</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-80">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart
+                    data={getWaterfallData()}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tickFormatter={formatYAxis}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [`€${value.toLocaleString()}`, 'Importe']}
+                      labelStyle={{ color: '#000' }}
+                    />
+                    <Bar dataKey="cumulative" name="Acumulado">
+                      {getWaterfallData().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={getBarColor(entry.type)} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Pie Charts */}
+        <div className="space-y-6">
+          {/* Origen de Fondos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Origen de Fondos</CardTitle>
+              <CardDescription>Fuentes de financiamiento</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-48">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={getOrigenFondosData()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={renderCustomLabel}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {getOrigenFondosData().map((entry, index) => (
+                        <Cell key={`origen-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => `€${value.toLocaleString()}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+              {!isLoading && (
+                <div className="mt-4 space-y-2">
+                  {getOrigenFondosData().map((item, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span>{item.name}: €{item.value.toLocaleString()}</span>
+                    </div>
                   ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Aplicación de Fondos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Aplicación de Fondos</CardTitle>
+              <CardDescription>Destino de los recursos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-48">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={getAplicacionFondosData()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={renderCustomLabel}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {getAplicacionFondosData().map((entry, index) => (
+                        <Cell key={`aplicacion-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => `€${value.toLocaleString()}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+              {!isLoading && (
+                <div className="mt-4 space-y-2">
+                  {getAplicacionFondosData().map((item, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span>{item.name}: €{item.value.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Content */}
       <div className="grid gap-6 md:grid-cols-3">
