@@ -6,6 +6,7 @@ import { AdminPage } from './pages/AdminPage';
 import { CompanySelector } from './pages/CompanySelector';
 import { CompanyDashboard } from './pages/company/CompanyDashboard';
 import { PyGPage } from './pages/company/PyGPage';
+import { CashflowPage } from './pages/CashflowPage';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -65,6 +66,15 @@ function App() {
             element={
               <AppLayout>
                 <PyGPage />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/cashflow" 
+            element={
+              <AppLayout>
+                <CashflowPage />
               </AppLayout>
             } 
           />
