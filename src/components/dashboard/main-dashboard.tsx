@@ -1,8 +1,22 @@
+import { useParams } from "react-router-dom";
+import { KPIDashboard } from "./kpi-dashboard";
 import { MetricCard } from "@/components/ui/metric-card";
 import { DashboardHeader } from "./dashboard-header";
 import { AIDiagnosis } from "./ai-diagnosis";
 
 export function MainDashboard() {
+  const { companyId } = useParams();
+
+  // If we're in a company context, show the KPI dashboard
+  if (companyId) {
+    return <KPIDashboard />;
+  }
+
+  // Otherwise show the original static dashboard
+  return <StaticDashboard />;
+}
+
+function StaticDashboard() {
   const currentYearMetrics = [
     {
       title: "Facturación Total",

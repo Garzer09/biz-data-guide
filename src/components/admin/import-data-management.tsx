@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Calendar, Building2, AlertCircle, CheckCircle } from "lucide-react";
+import { Upload, FileText, Calendar, Building2, AlertCircle, CheckCircle, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Company {
@@ -29,6 +29,7 @@ interface ImportJob {
 }
 
 const importTypes = [
+  { value: 'pyg_annual', label: 'P&G Anual' },
   { value: 'income', label: 'Cuenta P&G' },
   { value: 'balance', label: 'Balance' },
   { value: 'cashflow', label: 'Flujos de Caja' },
@@ -43,6 +44,7 @@ export function ImportDataManagement() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
   const { isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -107,8 +109,10 @@ export function ImportDataManagement() {
     }
 
     try {
+      setProcessing(true);
+      
       // Create import job record
-      const { data, error } = await supabase
+      const { data: jobData, error: jobError } = await supabase
         .from('import_jobs')
         .insert({
           company_id: selectedCompanyId,
@@ -121,23 +125,33 @@ export function ImportDataManagement() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (jobError) throw jobError;
 
-      // TODO: Implement actual file processing logic here
-      // For now, we'll just update the job as completed
-      await supabase
-        .from('import_jobs')
-        .update({
-          estado: 'COMPLETED',
-          total_rows: 100, // Mock data
-          ok_rows: 95,
-          error_rows: 5
-        })
-        .eq('id', data.id);
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${jobData.id}.${fileExt}`;
+      const filePath = `${selectedCompanyId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('import-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Create import file record
+      const { error: fileRecordError } = await supabase
+        .from('import_files')
+        .insert({
+          job_id: jobData.id,
+          storage_path: filePath,
+          subido_por: (await supabase.auth.getUser()).data.user?.id
+        });
+
+      if (fileRecordError) throw fileRecordError;
 
       toast({
-        title: "Archivo procesado",
-        description: "El archivo se ha procesado correctamente",
+        title: "Archivo subido",
+        description: "El archivo se ha subido correctamente. Haz clic en 'Procesar' para procesarlo.",
       });
 
       setIsModalOpen(false);
@@ -149,9 +163,47 @@ export function ImportDataManagement() {
       console.error('Error uploading file:', error);
       toast({
         title: "Error",
+        description: "No se pudo subir el archivo",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleProcessJob = async (jobId: string, jobType: string) => {
+    try {
+      setProcessing(true);
+      
+      if (jobType === 'pyg_annual') {
+        const { error } = await supabase.functions.invoke('import-pyg-anual', {
+          body: { job_id: jobId }
+        });
+
+        if (error) throw error;
+        
+        toast({
+          title: "Procesamiento iniciado",
+          description: "El archivo P&G anual está siendo procesado",
+        });
+      } else {
+        toast({
+          title: "Tipo no soportado",
+          description: "El procesamiento de este tipo de archivo aún no está implementado",
+          variant: "destructive",
+        });
+      }
+      
+      fetchData();
+    } catch (error) {
+      console.error('Error processing job:', error);
+      toast({
+        title: "Error",
         description: "No se pudo procesar el archivo",
         variant: "destructive",
       });
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -247,8 +299,8 @@ export function ImportDataManagement() {
                 />
               </div>
 
-              <Button onClick={handleFileUpload} className="w-full">
-                Procesar Archivo
+              <Button onClick={handleFileUpload} className="w-full" disabled={processing}>
+                {processing ? "Subiendo..." : "Subir Archivo"}
               </Button>
             </div>
           </DialogContent>
@@ -299,7 +351,20 @@ export function ImportDataManagement() {
                       Total: {job.total_rows}
                     </div>
                   </div>
-                  {getStatusBadge(job.estado)}
+                  <div className="flex items-center gap-2">
+                    {job.estado === 'PENDING' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleProcessJob(job.id, job.tipo)}
+                        disabled={processing}
+                      >
+                        <Play className="h-3 w-3 mr-1" />
+                        Procesar
+                      </Button>
+                    )}
+                    {getStatusBadge(job.estado)}
+                  </div>
                 </div>
               </div>
             ))}

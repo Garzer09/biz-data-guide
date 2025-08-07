@@ -1,7 +1,21 @@
 import { useParams } from "react-router-dom";
+import { PyGPage } from "./PyGPage";
 
 export function CompanyPage() {
   const { companyId, page } = useParams();
+
+  const renderPageContent = () => {
+    switch (page) {
+      case 'pyg':
+        return <PyGPage />;
+      default:
+        return (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Página en construcción: {page}</p>
+          </div>
+        );
+    }
+  };
 
   const getPageTitle = () => {
     switch (page) {
@@ -45,14 +59,7 @@ export function CompanyPage() {
         </p>
       </div>
 
-      <div className="flex items-center justify-center h-64 border-2 border-dashed border-border rounded-lg">
-        <div className="text-center">
-          <h3 className="text-lg font-medium mb-2">Página en desarrollo</h3>
-          <p className="text-muted-foreground">
-            Esta funcionalidad estará disponible próximamente
-          </p>
-        </div>
-      </div>
+      {renderPageContent()}
     </div>
   );
 }
