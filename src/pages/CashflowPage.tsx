@@ -6,8 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Plus, DollarSign, Building2 } from "lucide-react";
+import { Download, Plus, DollarSign, Building2, AlertCircle } from "lucide-react";
+
+interface CashflowData {
+  periodo: string;
+  flujo_operativo?: number;
+  flujo_inversion?: number;
+  flujo_financiacion?: number;
+}
 
 export function CashflowPage() {
   const { companyId } = useParams();
@@ -17,8 +25,13 @@ export function CashflowPage() {
   // State
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [availableYears, setAvailableYears] = useState<string[]>([]);
+  const [cashflowOperativo, setCashflowOperativo] = useState<CashflowData[]>([]);
+  const [cashflowInversion, setCashflowInversion] = useState<CashflowData[]>([]);
+  const [cashflowFinanciacion, setCashflowFinanciacion] = useState<CashflowData[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Check access and load initial data
   useEffect(() => {
@@ -26,6 +39,13 @@ export function CashflowPage() {
       checkAccess();
     }
   }, [companyId, user]);
+
+  // Load cashflow data when year changes
+  useEffect(() => {
+    if (selectedYear && hasAccess) {
+      fetchCashflowData();
+    }
+  }, [selectedYear, hasAccess]);
 
   const checkAccess = async () => {
     if (!companyId) return;
@@ -68,6 +88,49 @@ export function CashflowPage() {
       }
     } catch (error) {
       console.error('Error fetching years:', error);
+    }
+  };
+
+  const fetchCashflowData = async () => {
+    if (!companyId || !selectedYear) return;
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch all cashflow data in parallel
+      const [operativoResult, inversionResult, financiacionResult] = await Promise.all([
+        supabase.rpc('get_cashflow_operativo', {
+          _company_id: companyId,
+          _anio: selectedYear
+        }),
+        supabase.rpc('get_cashflow_inversion', {
+          _company_id: companyId,
+          _anio: selectedYear
+        }),
+        supabase.rpc('get_cashflow_financiacion', {
+          _company_id: companyId,
+          _anio: selectedYear
+        })
+      ]);
+
+      // Check for errors
+      if (operativoResult.error || inversionResult.error || financiacionResult.error) {
+        throw new Error('Error cargando flujos de caja');
+      }
+
+      setCashflowOperativo(operativoResult.data || []);
+      setCashflowInversion(inversionResult.data || []);
+      setCashflowFinanciacion(financiacionResult.data || []);
+
+    } catch (error) {
+      console.error('Error fetching cashflow data:', error);
+      setError('Error cargando flujos de caja');
+      setCashflowOperativo([]);
+      setCashflowInversion([]);
+      setCashflowFinanciacion([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -159,8 +222,17 @@ export function CashflowPage() {
         </div>
       </div>
 
-      {/* Content - Placeholder for now */}
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Content */}
       <div className="grid gap-6 md:grid-cols-3">
+        {/* Flujo Operativo */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -170,12 +242,30 @@ export function CashflowPage() {
             <CardDescription>Actividades principales del negocio</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-center py-8">
-              {selectedYear ? `Datos para ${selectedYear}` : "Seleccione un año"}
-            </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-8 w-1/2" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {cashflowOperativo.length > 0 ? (
+                  cashflowOperativo.map((item) => (
+                    <div key={item.periodo} className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">{item.periodo}</span>
+                      <span className="font-medium">€{item.flujo_operativo?.toLocaleString() || '0'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">Sin datos disponibles</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
+        {/* Flujo de Inversión */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -185,12 +275,30 @@ export function CashflowPage() {
             <CardDescription>Adquisiciones y ventas de activos</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-center py-8">
-              {selectedYear ? `Datos para ${selectedYear}` : "Seleccione un año"}
-            </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-8 w-1/2" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {cashflowInversion.length > 0 ? (
+                  cashflowInversion.map((item) => (
+                    <div key={item.periodo} className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">{item.periodo}</span>
+                      <span className="font-medium">€{item.flujo_inversion?.toLocaleString() || '0'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">Sin datos disponibles</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
+        {/* Flujo de Financiación */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -200,9 +308,26 @@ export function CashflowPage() {
             <CardDescription>Operaciones con accionistas y acreedores</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-center py-8">
-              {selectedYear ? `Datos para ${selectedYear}` : "Seleccione un año"}
-            </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-8 w-1/2" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {cashflowFinanciacion.length > 0 ? (
+                  cashflowFinanciacion.map((item) => (
+                    <div key={item.periodo} className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">{item.periodo}</span>
+                      <span className="font-medium">€{item.flujo_financiacion?.toLocaleString() || '0'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">Sin datos disponibles</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
