@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
       .from('import-files')
       .download(job.storage_path)
 
+    console.log('Download result - fileData:', !!fileData, 'error:', downloadError)
+
     if (downloadError || !fileData) {
       console.error('Error downloading file:', downloadError)
       await updateJobStatus(job_id, 'failed', { error: 'File download failed', details: downloadError })
@@ -109,10 +111,14 @@ Deno.serve(async (req) => {
     console.log('File downloaded successfully, size:', fileData.size)
 
     // Convert file to text
+    console.log('Converting file to text...')
     const fileText = await fileData.text()
+    console.log('File text length:', fileText.length)
+    console.log('First 200 chars:', fileText.substring(0, 200))
     
     // Parse CSV
     const lines = fileText.split('\n').filter(line => line.trim())
+    console.log('Total lines found:', lines.length)
     if (lines.length < 2) {
       await updateJobStatus(job_id, 'failed', { error: 'File is empty or has no data rows' })
       return new Response(
