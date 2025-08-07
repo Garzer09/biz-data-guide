@@ -501,6 +501,119 @@ export type Database = {
           },
         ]
       }
+      debt_scenarios: {
+        Row: {
+          activo: boolean | null
+          company_id: string
+          created_at: string | null
+          descripcion: string | null
+          id: string
+          nombre: string
+        }
+        Insert: {
+          activo?: boolean | null
+          company_id: string
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre: string
+        }
+        Update: {
+          activo?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_scenarios_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_scenarios_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "debt_scenarios_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      debts: {
+        Row: {
+          capital: number
+          company_id: string
+          created_at: string | null
+          cuota: number | null
+          entidad: string
+          escenario: string
+          id: string
+          plazo_meses: number | null
+          proximo_venc: string | null
+          tipo: string
+          tir: number | null
+        }
+        Insert: {
+          capital: number
+          company_id: string
+          created_at?: string | null
+          cuota?: number | null
+          entidad: string
+          escenario?: string
+          id?: string
+          plazo_meses?: number | null
+          proximo_venc?: string | null
+          tipo: string
+          tir?: number | null
+        }
+        Update: {
+          capital?: number
+          company_id?: string
+          created_at?: string | null
+          cuota?: number | null
+          entidad?: string
+          escenario?: string
+          id?: string
+          plazo_meses?: number | null
+          proximo_venc?: string | null
+          tipo?: string
+          tir?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       fs_balance: {
         Row: {
           company_id: string
@@ -1207,6 +1320,105 @@ export type Database = {
           },
         ]
       }
+      vw_debt_detail: {
+        Row: {
+          capital_pendiente: number | null
+          company_id: string | null
+          created_at: string | null
+          cuota: number | null
+          entidad: string | null
+          escenario: string | null
+          id: string | null
+          plazo_restante: string | null
+          proximo_vencimiento: string | null
+          tipo: string | null
+          tir: number | null
+        }
+        Insert: {
+          capital_pendiente?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          cuota?: number | null
+          entidad?: string | null
+          escenario?: string | null
+          id?: string | null
+          plazo_restante?: never
+          proximo_vencimiento?: string | null
+          tipo?: string | null
+          tir?: number | null
+        }
+        Update: {
+          capital_pendiente?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          cuota?: number | null
+          entidad?: string | null
+          escenario?: string | null
+          id?: string | null
+          plazo_restante?: never
+          proximo_vencimiento?: string | null
+          tipo?: string | null
+          tir?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      vw_debt_summary: {
+        Row: {
+          company_id: string | null
+          cuota_total_mensual: number | null
+          escenario: string | null
+          num_deudas: number | null
+          proximo_vencimiento: string | null
+          tir_promedio: number | null
+          total_capital: number | null
+          ultima_actualizacion: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "debts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       vw_kpis_anual: {
         Row: {
           anio: string | null
@@ -1576,6 +1788,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_debt_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
       get_deuda_ebitda: {
         Args: { _company_id: string; _anio: string }
         Returns: number
@@ -1594,6 +1812,10 @@ export type Database = {
       }
       get_margen_seguridad_valor: {
         Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_monthly_payment_total: {
+        Args: { _company_id: string; _escenario: string }
         Returns: number
       }
       get_nof_components: {
@@ -1673,6 +1895,10 @@ export type Database = {
         Args: { _company_id: string; _anio: string }
         Returns: number
       }
+      get_total_debt: {
+        Args: { _company_id: string; _escenario: string }
+        Returns: number
+      }
       get_wc_balance_years: {
         Args: { _company_id: string }
         Returns: {
@@ -1702,6 +1928,10 @@ export type Database = {
           anticipos_clientes: number
           trabajos_en_curso: number
         }[]
+      }
+      get_weighted_tir: {
+        Args: { _company_id: string; _escenario: string }
+        Returns: number
       }
       has_company_access: {
         Args: { _company_id: string }
