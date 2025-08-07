@@ -28,10 +28,10 @@ Deno.serve(async (req) => {
 
     console.log('SUCCESS: Basic validation passed')
 
-    // Update job status to completed in database
+    // Update job status to done in database
     const { error: updateError } = await supabase
       .from('import_jobs')
-      .update({ estado: 'completed' })
+      .update({ estado: 'done' })
       .eq('id', job_id)
 
     if (updateError) {
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
-    console.log('Job status updated to completed')
+    console.log('Job status updated to done')
 
     // Return the expected response format
     return new Response(
