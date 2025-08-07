@@ -20,16 +20,38 @@ interface CompanyPages {
 }
 
 const availablePages = [
+  // 1. Resumen Ejecutivo
   { id: 'dashboard', label: 'Dashboard Principal' },
-  { id: 'empresa', label: 'Perfil de Empresa' },
+  
+  // 2. Descripción Empresa
+  { id: 'company_profile', label: 'Descripción de la Empresa' },
+  
+  // 3. Análisis Situación Actual
   { id: 'pyg', label: 'Cuenta P&G' },
-  { id: 'balance', label: 'Balance' },
-  { id: 'cashflow', label: 'Flujos de Caja' },
+  { id: 'balance', label: 'Balance Situación' },
   { id: 'ratios', label: 'Ratios Financieros' },
-  { id: 'sensibilidad', label: 'Análisis Sensibilidad' },
-  { id: 'proyecciones', label: 'Proyecciones' },
-  { id: 'eva', label: 'Análisis EVA' },
-  { id: 'conclusiones', label: 'Conclusiones' }
+  { id: 'cashflow', label: 'Estado Flujos Caja' },
+  { id: 'nof', label: 'Análisis NOF' },
+  { id: 'breakeven', label: 'Punto Muerto' },
+  { id: 'debts', label: 'Endeudamiento' },
+  { id: 'debt_service', label: 'Servicio Deuda' },
+  { id: 'pyg_analytic', label: 'P&G Analítico Actual' },
+  { id: 'sales_segments', label: 'Ventas por Segmentos' },
+  
+  // 4. Supuestos y Plan Inversiones
+  { id: 'assumptions', label: 'Supuestos y Plan Inversiones' },
+  
+  // 5. Proyecciones (Año 1-3)
+  { id: 'projections', label: 'Proyecciones' },
+  
+  // 6. Análisis de Sensibilidad
+  { id: 'sensitivity', label: 'Análisis de Sensibilidad' },
+  
+  // 7. Valoración EVA
+  { id: 'eva', label: 'Valoración EVA' },
+  
+  // 8. Conclusiones
+  { id: 'conclusions', label: 'Conclusiones y Recomendaciones' }
 ];
 
 interface CompanyPagesManagementProps {

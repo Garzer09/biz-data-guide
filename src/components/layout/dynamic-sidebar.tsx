@@ -171,6 +171,20 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
         route = 'profile';
       } else if (page === 'debt_service') {
         route = 'pool-bancario';
+      } else if (page === 'debts') {
+        route = 'debt';
+      } else if (page === 'breakeven') {
+        route = 'breakeven';
+      } else if (page === 'sales_segments') {
+        route = 'sales-segments';
+      } else if (page === 'assumptions') {
+        route = 'assumptions';
+      } else if (page === 'projections') {
+        route = 'projections';
+      } else if (page === 'sensitivity') {
+        route = 'sensitivity';
+      } else if (page === 'conclusions') {
+        route = 'conclusions';
       }
       
       navigate(`/c/${companyId}/${route}`);
