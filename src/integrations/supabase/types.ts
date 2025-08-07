@@ -1396,7 +1396,17 @@ export type Database = {
           company_id: string
         }[]
       }
+      get_analisis_punto_muerto_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
       get_apalancamiento: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_apalancamiento_operativo: {
         Args: { _company_id: string; _anio: string }
         Returns: number
       }
@@ -1479,6 +1489,14 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_costes_fijos_totales: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_costes_variables_totales: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1487,11 +1505,35 @@ export type Database = {
         Args: { _company_id: string; _anio: string }
         Returns: number
       }
+      get_ingresos_totales: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_margen_contribucion_total: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_margen_seguridad_porcentaje: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_margen_seguridad_valor: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_punto_equilibrio_valor: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
       get_ratio_endeudamiento: {
         Args: { _company_id: string; _anio: string }
         Returns: number
       }
       get_ratio_liquidez_corriente: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_ratio_margen_contribucion: {
         Args: { _company_id: string; _anio: string }
         Returns: number
       }

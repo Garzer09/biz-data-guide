@@ -37,7 +37,8 @@ const pageIconMap: Record<string, any> = {
   sensibilidad: AlertTriangle,
   proyecciones: LineChart,
   eva: Target,
-  conclusiones: FileText
+  conclusiones: FileText,
+  'dead-point': AlertTriangle
 };
 
 const pageLabels: Record<string, string> = {
@@ -50,7 +51,8 @@ const pageLabels: Record<string, string> = {
   sensibilidad: "Análisis Sensibilidad",
   proyecciones: "Proyecciones",
   eva: "Análisis EVA",
-  conclusiones: "Conclusiones"
+  conclusiones: "Conclusiones",
+  'dead-point': "Punto Muerto"
 };
 
 export function DynamicSidebar({ onPageChange }: SidebarProps) {
@@ -96,7 +98,13 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
 
   const handleNavigation = (page: string) => {
     if (companyId) {
-      navigate(`/c/${companyId}/${page}`);
+      // Map specific page IDs to routes
+      let route = page;
+      if (page === 'dead-point') {
+        route = 'breakeven';
+      }
+      
+      navigate(`/c/${companyId}/${route}`);
       onPageChange(page);
     }
   };
