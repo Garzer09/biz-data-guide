@@ -9,6 +9,7 @@ import { PyGPage } from './pages/company/PyGPage';
 import { CashflowPage } from './pages/CashflowPage';
 import { RatiosPage } from './pages/RatiosPage';
 import { BreakevenPage } from './pages/BreakevenPage';
+import { NofPage } from './pages/NofPage';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -95,6 +96,15 @@ function App() {
             element={
               <AppLayout>
                 <BreakevenPage />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/nof" 
+            element={
+              <AppLayout>
+                <NofPage />
               </AppLayout>
             } 
           />
