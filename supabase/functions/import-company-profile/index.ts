@@ -312,25 +312,46 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
-    console.error('Error in import-company-profile:', error)
+  } catch (error: any) {
+    console.error('Error in import-company-profile function:', error)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
+    
+    await updateJobStatus(job_id, 'failed', { 
+      error: error.message || 'Unknown error',
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    })
+    
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Import failed', 
+        details: error.message || 'Unknown error'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
 
 async function updateJobStatus(jobId: string, status: string, summary: any) {
-  await supabase
-    .from('import_jobs')
-    .update({ 
-      estado: status, 
-      resumen: summary,
-      ok_rows: summary.ok_rows?.length || 0,
-      error_rows: summary.error_rows?.length || 0
-    })
-    .eq('id', jobId)
+  try {
+    const { error } = await supabase
+      .from('import_jobs')
+      .update({ 
+        estado: status, 
+        resumen: summary,
+        ok_rows: summary.ok_rows?.length || 0,
+        error_rows: summary.error_rows?.length || 0,
+        actualizado_en: new Date().toISOString()
+      })
+      .eq('id', jobId)
+    
+    if (error) {
+      console.error('Error updating job status:', error)
+    }
+  } catch (err) {
+    console.error('Error in updateJobStatus:', err)
+  }
 }
 
 function parseCSVRow(row: string): string[] {
