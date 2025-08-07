@@ -1658,45 +1658,46 @@ export type Database = {
           },
         ]
       }
-      vw_nof_summary: {
+      vw_kpis_anual: {
         Row: {
-          anticipos_clientes: number | null
-          clientes: number | null
+          anio: string | null
+          beneficio_neto: number | null
           company_id: string | null
-          dias_ciclo: number | null
-          inventario: number | null
-          nof_total: number | null
-          otros_acreedores: number | null
-          otros_deudores: number | null
-          periodo: string | null
-          proveedores: number | null
-          trabajos_en_curso: number | null
+          facturacion: number | null
+          margen_ebitda_pct: number | null
         }
-        Insert: {
-          anticipos_clientes?: never
-          clientes?: never
-          company_id?: string | null
-          dias_ciclo?: never
-          inventario?: never
-          nof_total?: never
-          otros_acreedores?: never
-          otros_deudores?: never
-          periodo?: string | null
-          proveedores?: never
-          trabajos_en_curso?: never
-        }
-        Update: {
-          anticipos_clientes?: never
-          clientes?: never
-          company_id?: string | null
-          dias_ciclo?: never
-          inventario?: never
-          nof_total?: never
-          otros_acreedores?: never
-          otros_deudores?: never
-          periodo?: string | null
-          proveedores?: never
-          trabajos_en_curso?: never
+        Relationships: [
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_annual_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      vw_kpis_anual_yoy: {
+        Row: {
+          anio: string | null
+          company_id: string | null
+          delta_pct: number | null
+          kpi: string | null
+          valor_actual: number | null
+          valor_anterior: number | null
         }
         Relationships: []
       }
@@ -1741,39 +1742,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "catalog_pyg_concepts"
             referencedColumns: ["concepto_codigo"]
-          },
-        ]
-      }
-      vw_pyg_analytic_segmento: {
-        Row: {
-          company_id: string | null
-          concepto_nombre: string | null
-          grupo: string | null
-          periodo: string | null
-          segmento: string | null
-          total_valor: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pyg_analytic_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pyg_analytic_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_vw"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "pyg_analytic_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "company_access"
-            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -1864,66 +1832,6 @@ export type Database = {
             referencedColumns: ["company_id"]
           },
         ]
-      }
-      vw_pyg_contribucion_centrocoste: {
-        Row: {
-          centro_coste: string | null
-          company_id: string | null
-          coste_ventas: number | null
-          ingresos: number | null
-          margen_bruto: number | null
-          margen_contribucion_pct: number | null
-          periodo: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pyg_analytic_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pyg_analytic_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_vw"
-            referencedColumns: ["company_id"]
-          },
-          {
-            foreignKeyName: "pyg_analytic_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "company_access"
-            referencedColumns: ["company_id"]
-          },
-        ]
-      }
-      vw_ratios_categorias: {
-        Row: {
-          anio: string | null
-          apalancamiento: number | null
-          capitalizacion: number | null
-          capitalizacion_benchmark: number | null
-          cobertura_intereses: number | null
-          cobertura_intereses_benchmark: number | null
-          company_id: string | null
-          company_name: string | null
-          deuda_ebitda: number | null
-          deuda_ebitda_benchmark: number | null
-          liquidez_corriente: number | null
-          liquidez_corriente_benchmark: number | null
-          periodo: string | null
-          ratio_endeudamiento: number | null
-          ratio_endeudamiento_benchmark: number | null
-          roa: number | null
-          roa_benchmark: number | null
-          roe: number | null
-          roe_benchmark: number | null
-          rotacion_activos: number | null
-          rotacion_activos_benchmark: number | null
-        }
-        Relationships: []
       }
       vw_ratios_empresa: {
         Row: {
