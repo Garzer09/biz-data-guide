@@ -1,0 +1,336 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0'
+import { corsHeaders } from '../_shared/cors.ts'
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+)
+
+interface ProcessingResult {
+  ok_rows: string[]
+  error_rows: Array<{ row: number; errors: string[] }>
+  warnings: string[]
+  estructura_accionarial: Array<{ company: string; data: any }>
+  organigrama: Array<{ company: string; data: any }>
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const { job_id } = await req.json()
+
+    if (!job_id) {
+      return new Response(
+        JSON.stringify({ error: 'job_id is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`Starting import for job: ${job_id}`)
+
+    // Check if user is admin
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { data: isAdmin, error: adminError } = await supabase
+      .rpc('is_current_user_admin')
+
+    if (adminError || !isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Get job details
+    const { data: job, error: jobError } = await supabase
+      .from('import_jobs')
+      .select('company_id, storage_path, tipo')
+      .eq('id', job_id)
+      .single()
+
+    if (jobError || !job) {
+      console.error('Job not found:', jobError)
+      return new Response(
+        JSON.stringify({ error: 'Job not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Update job status to processing
+    await supabase
+      .from('import_jobs')
+      .update({ estado: 'processing' })
+      .eq('id', job_id)
+
+    // Download file from storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('import-files')
+      .download(job.storage_path)
+
+    if (downloadError) {
+      console.error('Error downloading file:', downloadError)
+      await updateJobStatus(job_id, 'failed', { error: 'File download failed' })
+      return new Response(
+        JSON.stringify({ error: 'File download failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Convert file to text
+    const fileText = await fileData.text()
+    
+    // Parse CSV
+    const lines = fileText.split('\n').filter(line => line.trim())
+    if (lines.length < 2) {
+      await updateJobStatus(job_id, 'failed', { error: 'File is empty or has no data rows' })
+      return new Response(
+        JSON.stringify({ error: 'File is empty or has no data rows' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
+    const expectedHeaders = [
+      'company_alias', 'sector', 'industria', 'anio_fundacion', 'empleados', 
+      'ingresos_anuales', 'sede', 'sitio_web', 'descripcion', 
+      'estructura_accionarial', 'organigrama'
+    ]
+
+    // Validate headers
+    const missingHeaders = expectedHeaders.filter(h => !headers.includes(h))
+    if (missingHeaders.length > 0) {
+      await updateJobStatus(job_id, 'failed', { 
+        error: `Missing required headers: ${missingHeaders.join(', ')}` 
+      })
+      return new Response(
+        JSON.stringify({ error: `Missing required headers: ${missingHeaders.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Get company mapping
+    const { data: companies, error: companiesError } = await supabase
+      .from('companies')
+      .select('id, name')
+    
+    if (companiesError) {
+      console.error('Error loading companies:', companiesError)
+      await updateJobStatus(job_id, 'failed', { error: 'Failed to load companies' })
+      return new Response(
+        JSON.stringify({ error: 'Failed to load companies' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const companyMap = new Map(
+      companies.map(c => [c.name.toLowerCase(), c.id])
+    )
+
+    // Process rows
+    const result: ProcessingResult = {
+      ok_rows: [],
+      error_rows: [],
+      warnings: [],
+      estructura_accionarial: [],
+      organigrama: []
+    }
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i]
+      if (!row.trim()) continue
+
+      try {
+        const values = parseCSVRow(row)
+        const rowData: { [key: string]: string } = {}
+        
+        headers.forEach((header, index) => {
+          rowData[header] = values[index] || ''
+        })
+
+        const errors: string[] = []
+
+        // Find company
+        const companyAlias = rowData.company_alias?.toLowerCase()
+        const companyId = companyMap.get(companyAlias)
+        
+        if (!companyId) {
+          errors.push(`Company '${rowData.company_alias}' not found`)
+        }
+
+        // Validate and parse numeric fields
+        let anioFundacion: number | null = null
+        if (rowData.anio_fundacion) {
+          anioFundacion = parseInt(rowData.anio_fundacion)
+          if (isNaN(anioFundacion) || anioFundacion <= 1800) {
+            errors.push('anio_fundacion must be a number greater than 1800')
+          }
+        }
+
+        let empleados: number | null = null
+        if (rowData.empleados) {
+          empleados = parseInt(rowData.empleados)
+          if (isNaN(empleados) || empleados < 0) {
+            errors.push('empleados must be a non-negative number')
+          }
+        }
+
+        let ingresosAnuales: number | null = null
+        if (rowData.ingresos_anuales) {
+          ingresosAnuales = parseFloat(rowData.ingresos_anuales)
+          if (isNaN(ingresosAnuales) || ingresosAnuales < 0) {
+            errors.push('ingresos_anuales must be a non-negative number')
+          }
+        }
+
+        // Validate and parse JSON fields
+        let estructuraAccionarial: any = null
+        if (rowData.estructura_accionarial) {
+          try {
+            estructuraAccionarial = JSON.parse(rowData.estructura_accionarial)
+            if (companyId) {
+              result.estructura_accionarial.push({
+                company: rowData.company_alias,
+                data: estructuraAccionarial
+              })
+            }
+          } catch (e) {
+            errors.push('estructura_accionarial must be valid JSON')
+          }
+        }
+
+        let organigrama: any = null
+        if (rowData.organigrama) {
+          try {
+            organigrama = JSON.parse(rowData.organigrama)
+            if (companyId) {
+              result.organigrama.push({
+                company: rowData.company_alias,
+                data: organigrama
+              })
+            }
+          } catch (e) {
+            errors.push('organigrama must be valid JSON')
+          }
+        }
+
+        // Validate URL
+        if (rowData.sitio_web) {
+          try {
+            new URL(rowData.sitio_web)
+          } catch {
+            errors.push('sitio_web must be a valid URL')
+          }
+        }
+
+        if (errors.length > 0) {
+          result.error_rows.push({ row: i + 1, errors })
+          continue
+        }
+
+        if (!companyId) {
+          result.error_rows.push({ row: i + 1, errors: ['Company not found'] })
+          continue
+        }
+
+        // Upsert company profile
+        const { error: upsertError } = await supabase.rpc('upsert_company_profile', {
+          _company_id: companyId,
+          _sector: rowData.sector || null,
+          _industria: rowData.industria || null,
+          _año_fundacion: anioFundacion,
+          _empleados: empleados,
+          _ingresos_anuales: ingresosAnuales,
+          _sede: rowData.sede || null,
+          _sitio_web: rowData.sitio_web || null,
+          _descripcion: rowData.descripcion || null,
+          _estructura_accionarial: estructuraAccionarial,
+          _organigrama: organigrama
+        })
+
+        if (upsertError) {
+          console.error('Upsert error:', upsertError)
+          result.error_rows.push({ 
+            row: i + 1, 
+            errors: [`Database error: ${upsertError.message}`] 
+          })
+        } else {
+          result.ok_rows.push(`Row ${i + 1}: ${rowData.company_alias}`)
+        }
+
+      } catch (error) {
+        console.error(`Error processing row ${i + 1}:`, error)
+        result.error_rows.push({ 
+          row: i + 1, 
+          errors: [`Processing error: ${error.message}`] 
+        })
+      }
+    }
+
+    // Update job with results
+    const status = result.error_rows.length === 0 ? 'done' : 'failed'
+    await updateJobStatus(job_id, status, result)
+
+    return new Response(
+      JSON.stringify({ 
+        status, 
+        summary: {
+          ok_rows: result.ok_rows.length,
+          error_rows: result.error_rows.length,
+          warnings: result.warnings.length
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in import-company-profile:', error)
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})
+
+async function updateJobStatus(jobId: string, status: string, summary: any) {
+  await supabase
+    .from('import_jobs')
+    .update({ 
+      estado: status, 
+      resumen: summary,
+      ok_rows: summary.ok_rows?.length || 0,
+      error_rows: summary.error_rows?.length || 0
+    })
+    .eq('id', jobId)
+}
+
+function parseCSVRow(row: string): string[] {
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
+  
+  for (let i = 0; i < row.length; i++) {
+    const char = row[i]
+    
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim())
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  
+  result.push(current.trim())
+  return result
+}

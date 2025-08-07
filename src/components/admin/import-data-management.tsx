@@ -31,7 +31,8 @@ interface ImportJob {
 }
 
 const importTypes = [
-  { value: 'pyg_anual', label: 'P&G Anual' }
+  { value: 'pyg_anual', label: 'P&G Anual' },
+  { value: 'company_profile', label: 'Perfil de Empresa' }
 ];
 
 export function ImportDataManagement() {
@@ -200,8 +201,12 @@ export function ImportDataManagement() {
         job.id === jobId ? { ...job, estado: 'processing' } : job
       ));
 
+      // Get job type to determine which function to call
+      const job = importJobs.find(j => j.id === jobId);
+      const functionName = job?.tipo === 'company_profile' ? 'import-company-profile' : 'import-pyg-anual';
+      
       // Call the import edge function
-      const { data, error } = await supabase.functions.invoke('import-pyg-anual', {
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { job_id: jobId }
       });
 
@@ -251,6 +256,21 @@ export function ImportDataManagement() {
 
   const getTypeLabel = (tipo: string) => {
     return importTypes.find(t => t.value === tipo)?.label || tipo;
+  };
+
+  const downloadTemplate = () => {
+    const csvContent = "company_alias,sector,industria,anio_fundacion,empleados,ingresos_anuales,sede,sitio_web,descripcion,estructura_accionarial,organigrama\n";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'company_profile_template.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (!isAdmin) {
@@ -315,6 +335,22 @@ export function ImportDataManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {selectedType === 'company_profile' && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Para importar perfiles de empresa, descarga la plantilla:
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => downloadTemplate()}
+                    className="text-xs"
+                  >
+                    📄 Descargar plantilla CSV
+                  </Button>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="file">Archivo CSV/Excel</Label>
@@ -444,35 +480,84 @@ export function ImportDataManagement() {
             <div className="p-6 space-y-6">
               {selectedJobDetail.resumen && (
                 <>
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-green-600">
-                          {selectedJobDetail.resumen.ok_rows?.length || 0}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Filas exitosas</div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-red-600">
-                          {selectedJobDetail.resumen.error_rows?.length || 0}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Filas con error</div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-yellow-600">
-                          {selectedJobDetail.resumen.warnings?.length || 0}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Advertencias</div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                   {/* Summary Stats */}
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <Card>
+                       <CardContent className="p-4 text-center">
+                         <div className="text-2xl font-bold text-green-600">
+                           {selectedJobDetail.resumen.ok_rows?.length || 0}
+                         </div>
+                         <div className="text-sm text-muted-foreground">Filas exitosas</div>
+                       </CardContent>
+                     </Card>
+                     
+                     <Card>
+                       <CardContent className="p-4 text-center">
+                         <div className="text-2xl font-bold text-red-600">
+                           {selectedJobDetail.resumen.error_rows?.length || 0}
+                         </div>
+                         <div className="text-sm text-muted-foreground">Filas con error</div>
+                       </CardContent>
+                     </Card>
+                     
+                     <Card>
+                       <CardContent className="p-4 text-center">
+                         <div className="text-2xl font-bold text-yellow-600">
+                           {selectedJobDetail.resumen.warnings?.length || 0}
+                         </div>
+                         <div className="text-sm text-muted-foreground">Advertencias</div>
+                       </CardContent>
+                     </Card>
+                   </div>
+
+                   {/* JSON Fields Summary for Company Profile */}
+                   {selectedJobDetail.tipo === 'company_profile' && selectedJobDetail.resumen && (
+                     <>
+                       {selectedJobDetail.resumen.estructura_accionarial && selectedJobDetail.resumen.estructura_accionarial.length > 0 && (
+                         <Card>
+                           <CardHeader>
+                             <CardTitle className="text-base">Estructura Accionarial Procesada</CardTitle>
+                           </CardHeader>
+                           <CardContent>
+                             <ScrollArea className="h-40">
+                               <div className="space-y-2">
+                                 {selectedJobDetail.resumen.estructura_accionarial.map((item: any, index: number) => (
+                                   <div key={index} className="p-2 bg-muted rounded text-sm">
+                                     <strong>{item.company}:</strong>
+                                     <pre className="mt-1 text-xs overflow-x-auto">
+                                       {JSON.stringify(item.data, null, 2)}
+                                     </pre>
+                                   </div>
+                                 ))}
+                               </div>
+                             </ScrollArea>
+                           </CardContent>
+                         </Card>
+                       )}
+
+                       {selectedJobDetail.resumen.organigrama && selectedJobDetail.resumen.organigrama.length > 0 && (
+                         <Card>
+                           <CardHeader>
+                             <CardTitle className="text-base">Organigrama Procesado</CardTitle>
+                           </CardHeader>
+                           <CardContent>
+                             <ScrollArea className="h-40">
+                               <div className="space-y-2">
+                                 {selectedJobDetail.resumen.organigrama.map((item: any, index: number) => (
+                                   <div key={index} className="p-2 bg-muted rounded text-sm">
+                                     <strong>{item.company}:</strong>
+                                     <pre className="mt-1 text-xs overflow-x-auto">
+                                       {JSON.stringify(item.data, null, 2)}
+                                     </pre>
+                                   </div>
+                                 ))}
+                               </div>
+                             </ScrollArea>
+                           </CardContent>
+                         </Card>
+                       )}
+                     </>
+                   )}
 
                   {/* Error Details */}
                   {selectedJobDetail.resumen.error_rows && selectedJobDetail.resumen.error_rows.length > 0 && (

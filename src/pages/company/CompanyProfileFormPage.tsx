@@ -9,7 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Edit3, Save, X, Building, Users, Calendar, DollarSign, MapPin, Globe, FileText } from "lucide-react";
+import { Edit3, Save, X, Building, Users, Calendar, DollarSign, MapPin, Globe, FileText, UserCircle, Briefcase, Plus, Trash2 } from "lucide-react";
+
+interface ShareholderEntry {
+  accionista: string;
+  porcentaje: number;
+}
 
 interface CompanyProfile {
   sector: string;
@@ -20,12 +25,16 @@ interface CompanyProfile {
   sede: string;
   sitio_web: string;
   descripcion: string;
+  estructura_accionarial: ShareholderEntry[];
+  organigrama: { [key: string]: string };
 }
 
 interface ValidationErrors {
   año_fundacion?: string;
   ingresos_anuales?: string;
   sitio_web?: string;
+  estructura_accionarial?: string;
+  organigrama?: string;
 }
 
 export function CompanyProfileFormPage() {
@@ -47,7 +56,9 @@ export function CompanyProfileFormPage() {
     ingresos_anuales: null,
     sede: "",
     sitio_web: "",
-    descripcion: ""
+    descripcion: "",
+    estructura_accionarial: [],
+    organigrama: {}
   });
 
   const [formData, setFormData] = useState<CompanyProfile>(profile);
@@ -92,7 +103,35 @@ export function CompanyProfileFormPage() {
         }
 
         if (profileData && profileData.length > 0) {
-          const profileRow = profileData[0];
+          const profileRow = profileData[0] as any; // Type assertion for new fields
+          
+          // Parse JSONB fields
+          let estructuraAccionarial: ShareholderEntry[] = [];
+          if (profileRow.estructura_accionarial) {
+            try {
+              const parsed = Array.isArray(profileRow.estructura_accionarial) 
+                ? profileRow.estructura_accionarial 
+                : [];
+              estructuraAccionarial = parsed.map((item: any) => ({
+                accionista: item.accionista || "",
+                porcentaje: parseFloat(item["%"] || item.porcentaje || 0)
+              }));
+            } catch (e) {
+              console.error('Error parsing estructura_accionarial:', e);
+            }
+          }
+
+          let organigrama: { [key: string]: string } = {};
+          if (profileRow.organigrama) {
+            try {
+              organigrama = typeof profileRow.organigrama === 'object' 
+                ? profileRow.organigrama 
+                : {};
+            } catch (e) {
+              console.error('Error parsing organigrama:', e);
+            }
+          }
+
           const loadedProfile = {
             sector: profileRow.sector || "",
             industria: profileRow.industria || "",
@@ -101,7 +140,9 @@ export function CompanyProfileFormPage() {
             ingresos_anuales: profileRow.ingresos_anuales,
             sede: profileRow.sede || "",
             sitio_web: profileRow.sitio_web || "",
-            descripcion: profileRow.descripcion || ""
+            descripcion: profileRow.descripcion || "",
+            estructura_accionarial: estructuraAccionarial,
+            organigrama: organigrama
           };
           setProfile(loadedProfile);
           setFormData(loadedProfile);
@@ -141,6 +182,23 @@ export function CompanyProfileFormPage() {
       }
     }
 
+    // Validate JSON fields
+    try {
+      const estructuraJSON = formData.estructura_accionarial.map(item => ({
+        accionista: item.accionista,
+        "%": item.porcentaje
+      }));
+      JSON.stringify(estructuraJSON);
+    } catch {
+      newErrors.estructura_accionarial = "Error en la estructura accionarial";
+    }
+
+    try {
+      JSON.stringify(formData.organigrama);
+    } catch {
+      newErrors.organigrama = "Error en el organigrama";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -151,6 +209,18 @@ export function CompanyProfileFormPage() {
     try {
       setSaving(true);
 
+      // Prepare JSONB fields
+      const estructuraAccionarialJSON = formData.estructura_accionarial.length > 0
+        ? formData.estructura_accionarial.map(item => ({
+            accionista: item.accionista,
+            "%": item.porcentaje
+          }))
+        : null;
+
+      const organigramaJSON = Object.keys(formData.organigrama).length > 0
+        ? formData.organigrama
+        : null;
+
       const { error } = await supabase.rpc('upsert_company_profile', {
         _company_id: companyId,
         _sector: formData.sector || null,
@@ -160,8 +230,10 @@ export function CompanyProfileFormPage() {
         _ingresos_anuales: formData.ingresos_anuales,
         _sede: formData.sede || null,
         _sitio_web: formData.sitio_web || null,
-        _descripcion: formData.descripcion || null
-      });
+        _descripcion: formData.descripcion || null,
+        _estructura_accionarial: estructuraAccionarialJSON,
+        _organigrama: organigramaJSON
+      } as any); // Type assertion for new parameters
 
       if (error) {
         console.error('Error saving profile:', error);
@@ -204,6 +276,50 @@ export function CompanyProfileFormPage() {
       style: 'currency',
       currency: 'EUR'
     }).format(value);
+  };
+
+  const addShareholder = () => {
+    setFormData({
+      ...formData,
+      estructura_accionarial: [
+        ...formData.estructura_accionarial,
+        { accionista: "", porcentaje: 0 }
+      ]
+    });
+  };
+
+  const removeShareholder = (index: number) => {
+    const newStructure = formData.estructura_accionarial.filter((_, i) => i !== index);
+    setFormData({ ...formData, estructura_accionarial: newStructure });
+  };
+
+  const updateShareholder = (index: number, field: 'accionista' | 'porcentaje', value: string | number) => {
+    const newStructure = [...formData.estructura_accionarial];
+    newStructure[index] = { ...newStructure[index], [field]: value };
+    setFormData({ ...formData, estructura_accionarial: newStructure });
+  };
+
+  const addOrgPosition = () => {
+    const newKey = `Nuevo Cargo ${Object.keys(formData.organigrama).length + 1}`;
+    setFormData({
+      ...formData,
+      organigrama: { ...formData.organigrama, [newKey]: "" }
+    });
+  };
+
+  const removeOrgPosition = (key: string) => {
+    const newOrg = { ...formData.organigrama };
+    delete newOrg[key];
+    setFormData({ ...formData, organigrama: newOrg });
+  };
+
+  const updateOrgPosition = (oldKey: string, newKey: string, value: string) => {
+    const newOrg = { ...formData.organigrama };
+    if (oldKey !== newKey) {
+      delete newOrg[oldKey];
+    }
+    newOrg[newKey] = value;
+    setFormData({ ...formData, organigrama: newOrg });
   };
 
   if (loading) {
@@ -493,6 +609,150 @@ export function CompanyProfileFormPage() {
                 rows={4}
                 className="resize-none"
               />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Estructura Accionarial */}
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base">
+              <div className="flex items-center">
+                <UserCircle className="w-4 h-4 mr-2" />
+                Estructura Accionarial
+              </div>
+              {!isReadOnly && (
+                <Button size="sm" variant="outline" onClick={addShareholder}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Añadir
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {errors.estructura_accionarial && (
+              <p className="text-sm text-destructive mb-2">{errors.estructura_accionarial}</p>
+            )}
+            
+            {isReadOnly ? (
+              <div className="space-y-2">
+                {profile.estructura_accionarial.length > 0 ? (
+                  profile.estructura_accionarial.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                      <span>{item.accionista}</span>
+                      <span className="font-medium">{item.porcentaje}%</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="py-2 text-muted-foreground">No especificado</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {formData.estructura_accionarial.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      placeholder="Nombre del accionista"
+                      value={item.accionista}
+                      onChange={(e) => updateShareholder(index, 'accionista', e.target.value)}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="%"
+                      value={item.porcentaje || ""}
+                      onChange={(e) => updateShareholder(index, 'porcentaje', parseFloat(e.target.value) || 0)}
+                      className="w-20"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeShareholder(index)}
+                      className="px-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                {formData.estructura_accionarial.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">
+                    No hay accionistas definidos. Haz clic en "Añadir" para agregar uno.
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Organigrama */}
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base">
+              <div className="flex items-center">
+                <Briefcase className="w-4 h-4 mr-2" />
+                Organigrama
+              </div>
+              {!isReadOnly && (
+                <Button size="sm" variant="outline" onClick={addOrgPosition}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Añadir Cargo
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {errors.organigrama && (
+              <p className="text-sm text-destructive mb-2">{errors.organigrama}</p>
+            )}
+            
+            {isReadOnly ? (
+              <div className="space-y-2">
+                {Object.keys(profile.organigrama).length > 0 ? (
+                  Object.entries(profile.organigrama).map(([cargo, persona]) => (
+                    <div key={cargo} className="flex justify-between items-center p-2 bg-muted rounded">
+                      <span className="font-medium">{cargo}</span>
+                      <span>{persona}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="py-2 text-muted-foreground">No especificado</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(formData.organigrama).map(([cargo, persona]) => (
+                  <div key={cargo} className="flex items-center gap-2">
+                    <Input
+                      placeholder="Cargo/Posición"
+                      value={cargo}
+                      onChange={(e) => updateOrgPosition(cargo, e.target.value, persona)}
+                      className="flex-1"
+                    />
+                    <Input
+                      placeholder="Nombre de la persona"
+                      value={persona}
+                      onChange={(e) => updateOrgPosition(cargo, cargo, e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeOrgPosition(cargo)}
+                      className="px-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                {Object.keys(formData.organigrama).length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">
+                    No hay cargos definidos. Haz clic en "Añadir Cargo" para agregar uno.
+                  </p>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
