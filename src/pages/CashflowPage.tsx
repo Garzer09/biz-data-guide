@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MetricCard } from "@/components/ui/metric-card";
 import { useToast } from "@/hooks/use-toast";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Download, Plus, DollarSign, Building2, AlertCircle } from "lucide-react";
 
 interface CashflowData {
@@ -158,6 +159,118 @@ export function CashflowPage() {
       financiacion: financiacionSum,
       neto: flujoNeto
     };
+  };
+
+  const getWaterfallData = () => {
+    const sums = calculateSums();
+    
+    // Placeholder values for missing data - in real implementation these would come from additional RPC calls
+    const beneficioNeto = 150000; // Placeholder
+    const amortizaciones = 25000; // Placeholder
+    const deltaNof = -30000; // Placeholder (negative working capital change)
+    const dividendos = -20000; // Placeholder (negative as it's a cash outflow)
+    
+    let cumulative = 0;
+    const data = [];
+
+    // Starting point
+    data.push({
+      name: 'Beneficio Neto',
+      value: beneficioNeto,
+      cumulative: cumulative + beneficioNeto,
+      type: 'addition',
+      displayValue: beneficioNeto
+    });
+    cumulative += beneficioNeto;
+
+    // Amortizaciones (addition)
+    data.push({
+      name: 'Amortizaciones',
+      value: amortizaciones,
+      cumulative: cumulative + amortizaciones,
+      type: 'addition',
+      displayValue: amortizaciones
+    });
+    cumulative += amortizaciones;
+
+    // Delta NOF (can be positive or negative)
+    data.push({
+      name: 'Δ NOF',
+      value: deltaNof,
+      cumulative: cumulative + deltaNof,
+      type: deltaNof >= 0 ? 'addition' : 'subtraction',
+      displayValue: deltaNof
+    });
+    cumulative += deltaNof;
+
+    // Flujo Operativo (total)
+    data.push({
+      name: 'Flujo Operativo',
+      value: 0, // This is a total, so no additional value
+      cumulative: cumulative,
+      type: 'total',
+      displayValue: cumulative
+    });
+
+    // Flujo Inversión (negative)
+    const inversionNegative = Math.abs(sums.inversion); // Show as positive bar but it's a subtraction
+    data.push({
+      name: 'Inversiones',
+      value: -inversionNegative,
+      cumulative: cumulative - inversionNegative,
+      type: 'subtraction',
+      displayValue: -inversionNegative
+    });
+    cumulative -= inversionNegative;
+
+    // Flujo Financiación (positive)
+    const financiacionPositive = Math.max(0, sums.financiacion);
+    data.push({
+      name: 'Financiación',
+      value: financiacionPositive,
+      cumulative: cumulative + financiacionPositive,
+      type: 'addition',
+      displayValue: financiacionPositive
+    });
+    cumulative += financiacionPositive;
+
+    // Dividendos (subtraction)
+    data.push({
+      name: 'Dividendos',
+      value: dividendos,
+      cumulative: cumulative + dividendos,
+      type: 'subtraction',
+      displayValue: dividendos
+    });
+    cumulative += dividendos;
+
+    // Final total
+    data.push({
+      name: 'Flujo Neto',
+      value: 0,
+      cumulative: cumulative,
+      type: 'total',
+      displayValue: cumulative
+    });
+
+    return data;
+  };
+
+  const getBarColor = (type: string) => {
+    switch (type) {
+      case 'addition':
+        return '#10b981'; // Green
+      case 'subtraction':
+        return '#ef4444'; // Red
+      case 'total':
+        return '#3b82f6'; // Blue
+      default:
+        return '#6b7280'; // Gray
+    }
+  };
+
+  const formatYAxis = (value: number) => {
+    return `€${(value / 1000).toFixed(0)}K`;
   };
 
   const handleExport = () => {
@@ -316,6 +429,52 @@ export function CashflowPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      {/* Waterfall Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Análisis Waterfall – Generación y Aplicación de Fondos
+          </CardTitle>
+          <CardDescription>Flujo de efectivo desde beneficio hasta flujo neto</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-80">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart
+                data={getWaterfallData()}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  interval={0}
+                />
+                <YAxis 
+                  tickFormatter={formatYAxis}
+                />
+                <Tooltip 
+                  formatter={(value: number) => [`€${value.toLocaleString()}`, 'Importe']}
+                  labelStyle={{ color: '#000' }}
+                />
+                <Bar dataKey="cumulative" name="Acumulado">
+                  {getWaterfallData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getBarColor(entry.type)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Content */}
       <div className="grid gap-6 md:grid-cols-3">
