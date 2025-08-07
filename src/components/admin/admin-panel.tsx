@@ -7,22 +7,15 @@ import { CompaniesManagement } from "./companies-management";
 import { UsersManagement } from "./users-management";
 import { ImportDataManagement } from "./import-data-management";
 import { DebtUploadModal } from "../debt/debt-upload-modal";
-import { DebtServiceUploadModal } from "../debt/debt-service-upload-modal";
 import { PyGAnalyticUploadModal } from "./pyg-analytic-upload-modal";
 
 export function AdminPanel() {
   const [isDebtModalOpen, setIsDebtModalOpen] = useState(false);
-  const [isDebtServiceModalOpen, setIsDebtServiceModalOpen] = useState(false);
   const [isPyGAnalyticModalOpen, setIsPyGAnalyticModalOpen] = useState(false);
 
   const handleDebtUploadSuccess = () => {
     // Refresh any data if needed
     console.log('Debt upload completed successfully');
-  };
-
-  const handleDebtServiceUploadSuccess = () => {
-    // Refresh any data if needed
-    console.log('Debt service upload completed successfully');
   };
 
   const handlePyGAnalyticUploadSuccess = () => {
@@ -133,22 +126,13 @@ export function AdminPanel() {
                     Sube archivos CSV con datos de deudas para gestionar el pool bancario de las empresas
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setIsDebtModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Cargar Deudas
-                  </button>
-                  <button 
-                    onClick={() => setIsDebtServiceModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    Cargar Servicio Deuda
-                  </button>
-                </div>
+                <button 
+                  onClick={() => setIsDebtModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                >
+                  <Upload className="h-4 w-4" />
+                  Cargar Deudas
+                </button>
               </div>
               
               <div className="border rounded-lg p-4 bg-muted/50">
@@ -188,12 +172,6 @@ export function AdminPanel() {
         isOpen={isDebtModalOpen}
         onClose={() => setIsDebtModalOpen(false)}
         onSuccess={handleDebtUploadSuccess}
-      />
-      
-      <DebtServiceUploadModal
-        isOpen={isDebtServiceModalOpen}
-        onClose={() => setIsDebtServiceModalOpen(false)}
-        onSuccess={handleDebtServiceUploadSuccess}
       />
       
       <PyGAnalyticUploadModal

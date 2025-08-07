@@ -40,6 +40,7 @@ const importTypes = [
   { value: 'cashflow_inversion', label: 'Cashflow Inversión' },
   { value: 'cashflow_financiacion', label: 'Cashflow Financiación' },
   { value: 'ratios', label: 'Ratios Financieros' },
+  { value: 'debt_service', label: 'Servicio Deuda' },
   { value: 'debts', label: 'Pool de Deudas' }
 ];
 
@@ -269,6 +270,10 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         functionName = 'import-pyg-analytic';
         functionBody = { job_id: jobId };
         console.log('Calling import-pyg-analytic function with:', functionBody);
+      } else if (job?.tipo === 'debt_service') {
+        functionName = 'import-debt-service';
+        functionBody = { job_id: jobId };
+        console.log('Calling import-debt-service function with:', functionBody);
       }
         
       const { data, error } = await supabase.functions.invoke(functionName, {
@@ -376,6 +381,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       'cashflow_inversion': 'Cashflow Inversión',
       'cashflow_financiacion': 'Cashflow Financiación',
       'ratios': 'Ratios Financieros',
+      'debt_service': 'Servicio Deuda',
       'debts': 'Pool de Deudas'
     };
     return typeMap[tipo] || tipo;
@@ -469,6 +475,19 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
         link.setAttribute('download', 'debt_pool_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else if (templateType === 'debt_service') {
+      const csvContent = "company_code,periodo,principal,intereses,flujo_operativo\nEMP_DEMO_2,2024-01,50000,5000,65000\nEMP_DEMO_2,2024-02,48000,4800,68000\nEMP_DEMO_2,2024-03,46000,4600,70000\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'debt_service_template.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -573,7 +592,7 @@ EMP_DEMO_2,2024-01,PYG_COSTE_VENTAS,-25000,Ventas Online,Madrid`;
                 </Select>
               </div>
 
-              {(selectedType === 'company_profile' || selectedType === 'balance_operativo' || selectedType === 'balance_financiero' || selectedType.startsWith('cashflow_') || selectedType === 'ratios' || selectedType === 'debts' || selectedType === 'pyg_analytic') && (
+              {(selectedType === 'company_profile' || selectedType === 'balance_operativo' || selectedType === 'balance_financiero' || selectedType.startsWith('cashflow_') || selectedType === 'ratios' || selectedType === 'debts' || selectedType === 'debt_service' || selectedType === 'pyg_analytic') && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground mb-2">
                     Para importar {getTypeLabel(selectedType).toLowerCase()}, descarga la plantilla:
