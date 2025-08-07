@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { PyGPage } from "./PyGPage";
 import { CompanyProfilePage } from "./CompanyProfilePage";
+import { CompanyProfileFormPage } from "./CompanyProfileFormPage";
 
 export function CompanyPage() {
   const { companyId, page } = useParams();
@@ -11,6 +12,8 @@ export function CompanyPage() {
         return <PyGPage />;
       case 'empresa':
         return <CompanyProfilePage />;
+      case 'profile':
+        return <CompanyProfileFormPage />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
@@ -27,6 +30,8 @@ export function CompanyPage() {
       case 'pyg':
         return 'Cuenta P&G';
       case 'empresa':
+        return 'Perfil de Empresa';
+      case 'profile':
         return 'Perfil de Empresa';
       case 'balance':
         return 'Balance';
