@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Calendar, Building2, AlertCircle, CheckCircle, Play, Info } from "lucide-react";
+import { Upload, FileText, Calendar, Building2, AlertCircle, CheckCircle, Play, Info, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -264,6 +264,46 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
     }
   };
 
+  const deleteJob = async (jobId: string) => {
+    try {
+      const job = importJobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      // Delete the file from storage first
+      const { error: storageError } = await supabase.storage
+        .from('import-files')
+        .remove([job.storage_path]);
+
+      if (storageError) {
+        console.warn('Error deleting file from storage:', storageError);
+      }
+
+      // Delete the import job record
+      const { error: dbError } = await supabase
+        .from('import_jobs')
+        .delete()
+        .eq('id', jobId);
+
+      if (dbError) throw dbError;
+
+      // Refresh data
+      await fetchData();
+
+      toast({
+        title: "Archivo eliminado",
+        description: "El archivo y el registro de importación han sido eliminados",
+      });
+
+    } catch (error: any) {
+      console.error('Error deleting job:', error);
+      toast({
+        title: "Error al eliminar",
+        description: error.message || "No se pudo eliminar el archivo",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (estado: string) => {
     switch (estado) {
       case 'pending':
@@ -489,6 +529,15 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
                               {processingJobs.has(job.id) ? 'Procesando...' : 'Procesar'}
                             </Button>
                           )}
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteJob(job.id)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
