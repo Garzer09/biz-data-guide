@@ -1177,6 +1177,36 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_wc_balance_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
+      get_wc_financial_balance: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          periodo: string
+          activo_corriente: number
+          activo_no_corriente: number
+          pasivo_corriente: number
+          pasivo_no_corriente: number
+          patrimonio_neto: number
+        }[]
+      }
+      get_wc_operating_balance: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          periodo: string
+          clientes: number
+          inventario: number
+          proveedores: number
+          otros_deudores_op: number
+          otros_acreedores_op: number
+          anticipos_clientes: number
+          trabajos_en_curso: number
+        }[]
+      }
       has_company_access: {
         Args: { _company_id: string }
         Returns: boolean

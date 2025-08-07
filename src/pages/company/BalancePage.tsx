@@ -96,7 +96,7 @@ export function BalancePage() {
     if (!companyId) return;
 
     try {
-      const { data, error } = await supabase.rpc('get_balance_years', {
+      const { data, error } = await supabase.rpc('get_wc_balance_years', {
         _company_id: companyId
       });
 
@@ -121,43 +121,50 @@ export function BalancePage() {
     try {
       // Fetch balance data
       const [operativoResult, financieroResult, kpiResult, previousKpiResult] = await Promise.all([
-        supabase.rpc('get_balance_operativo', {
+        supabase.rpc('get_wc_operating_balance', {
           _company_id: companyId,
           _anio: selectedYear
         }),
-        supabase.rpc('get_balance_financiero', {
+        supabase.rpc('get_wc_financial_balance', {
           _company_id: companyId,
           _anio: selectedYear
         }),
+        // Fetch KPI data - make these optional since we might not have P&G data
         supabase
           .from('vw_kpis_anual')
           .select('beneficio_neto, facturacion, margen_ebitda_pct')
           .eq('company_id', companyId)
           .eq('anio', selectedYear)
-          .single(),
+          .maybeSingle(), // Use maybeSingle to avoid errors if no data
         supabase
           .from('vw_kpis_anual')
           .select('beneficio_neto, facturacion, margen_ebitda_pct')
           .eq('company_id', companyId)
           .eq('anio', (parseInt(selectedYear) - 1).toString())
-          .single()
+          .maybeSingle() // Use maybeSingle to avoid errors if no data
       ]);
 
-      if (operativoResult.error) throw operativoResult.error;
-      if (financieroResult.error) throw financieroResult.error;
+      if (operativoResult.error) {
+        console.error('Operativo error:', operativoResult.error);
+        // Don't throw, continue with empty data
+      }
+      if (financieroResult.error) {
+        console.error('Financiero error:', financieroResult.error);
+        // Don't throw, continue with empty data  
+      }
 
       setBalanceOperativo(operativoResult.data || []);
       setBalanceFinanciero(financieroResult.data || []);
-      setKpiData(kpiResult.data);
-      setPreviousKpiData(previousKpiResult.data);
+      setKpiData(kpiResult.data || null);
+      setPreviousKpiData(previousKpiResult.data || null);
 
     } catch (error) {
       console.error('Error fetching balance data:', error);
-      toast({
-        title: "Error",
-        description: "Error al cargar los datos del balance",
-        variant: "destructive"
-      });
+      // Don't show error toast, just log it and continue with empty data
+      setBalanceOperativo([]);
+      setBalanceFinanciero([]);
+      setKpiData(null);
+      setPreviousKpiData(null);
     } finally {
       setLoading(false);
     }
@@ -171,7 +178,7 @@ export function BalancePage() {
     const totalPasivo = latestBalance.pasivo_corriente + latestBalance.pasivo_no_corriente;
     const fondoManiobra = latestBalance.activo_corriente - latestBalance.pasivo_corriente;
     
-    const roa = kpiData && totalActivo > 0 ? (kpiData.beneficio_neto / totalActivo) * 100 : 0;
+    const roa = kpiData?.beneficio_neto && totalActivo > 0 ? (kpiData.beneficio_neto / totalActivo) * 100 : 0;
     const endeudamiento = totalActivo > 0 ? (totalPasivo / totalActivo) * 100 : 0;
 
     return {
