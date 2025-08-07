@@ -1045,6 +1045,36 @@ export type Database = {
           company_id: string
         }[]
       }
+      get_balance_financiero: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          periodo: string
+          activo_corriente: number
+          activo_no_corriente: number
+          pasivo_corriente: number
+          pasivo_no_corriente: number
+          patrimonio_neto: number
+        }[]
+      }
+      get_balance_operativo: {
+        Args: { _company_id: string; _anio: string }
+        Returns: {
+          periodo: string
+          clientes: number
+          inventario: number
+          proveedores: number
+          otros_deudores_op: number
+          otros_acreedores_op: number
+          anticipos_clientes: number
+          trabajos_en_curso: number
+        }[]
+      }
+      get_balance_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
       get_company_profile: {
         Args: { _company_id: string }
         Returns: {
