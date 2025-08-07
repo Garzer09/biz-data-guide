@@ -123,8 +123,14 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract current page from URL
-  const currentPage = location.pathname.split('/').pop() || 'dashboard';
+  // Extract current page from URL and map it back to the sidebar key
+  const currentRoute = location.pathname.split('/').pop() || 'dashboard';
+  const currentPage = (() => {
+    if (currentRoute === 'debt-service') return 'debt_service';
+    if (currentRoute === 'sales-segments') return 'sales_segments';
+    if (currentRoute === 'pyg_analytic') return 'pyg_analytic';
+    return currentRoute;
+  })();
 
   useEffect(() => {
     // Only fetch company pages if we're on a company route (not admin)
@@ -170,7 +176,7 @@ export function DynamicSidebar({ onPageChange }: SidebarProps) {
       if (page === 'company_profile') {
         route = 'profile';
       } else if (page === 'debt_service') {
-        route = 'pool-bancario';
+        route = 'debt-service';
       } else if (page === 'debts') {
         route = 'debt';
       } else if (page === 'breakeven') {
