@@ -34,7 +34,10 @@ const importTypes = [
   { value: 'pyg_anual', label: 'P&G Anual' },
   { value: 'company_profile', label: 'Perfil de Empresa' },
   { value: 'balance_operativo', label: 'Balance Operativo' },
-  { value: 'balance_financiero', label: 'Balance Financiero' }
+  { value: 'balance_financiero', label: 'Balance Financiero' },
+  { value: 'cashflow_operativo', label: 'Cashflow Operativo' },
+  { value: 'cashflow_inversion', label: 'Cashflow Inversión' },
+  { value: 'cashflow_financiacion', label: 'Cashflow Financiación' }
 ];
 
 interface ImportDataManagementProps {
@@ -241,17 +244,17 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       // Get job type to determine which function to call
       const job = importJobs.find(j => j.id === jobId);
       let functionName = 'import-pyg-anual'; // default
+      let functionBody: any = { job_id: jobId };
       
       if (job?.tipo === 'company_profile') {
         functionName = 'import-company-profile';
       } else if (job?.tipo === 'balance_operativo' || job?.tipo === 'balance_financiero') {
         functionName = 'import-balance';
+        functionBody = { job_id: jobId, tipo: job.tipo.replace('balance_', '') };
+      } else if (job?.tipo?.startsWith('cashflow_')) {
+        functionName = 'import-cashflow';
+        functionBody = { job_id: jobId, tipo: job.tipo.replace('cashflow_', '') };
       }
-      
-      // Call the import edge function
-      const functionBody = (job?.tipo === 'balance_operativo' || job?.tipo === 'balance_financiero') 
-        ? { job_id: jobId, tipo: job.tipo.replace('balance_', '') }
-        : { job_id: jobId };
         
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: functionBody
@@ -346,7 +349,10 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       'pyg_anual': 'P&G Anual',
       'company_profile': 'Perfil de Empresa',
       'balance_operativo': 'Balance Operativo',
-      'balance_financiero': 'Balance Financiero'
+      'balance_financiero': 'Balance Financiero',
+      'cashflow_operativo': 'Cashflow Operativo',
+      'cashflow_inversion': 'Cashflow Inversión',
+      'cashflow_financiacion': 'Cashflow Financiación'
     };
     return typeMap[tipo] || tipo;
   };
@@ -379,6 +385,45 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
       link.href = '/templates/seed_balance_financiero_2024.csv';
       link.download = 'balance_financiero_template.csv';
       link.click();
+    } else if (templateType === 'cashflow_operativo') {
+      const csvContent = "company_alias,periodo,flujo_operativo\nEmpresa Demo,2024-01,50000\nEmpresa Demo,2024-02,55000\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'cashflow_operativo_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else if (templateType === 'cashflow_inversion') {
+      const csvContent = "company_alias,periodo,flujo_inversion\nEmpresa Demo,2024-01,-25000\nEmpresa Demo,2024-02,-30000\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'cashflow_inversion_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else if (templateType === 'cashflow_financiacion') {
+      const csvContent = "company_alias,periodo,flujo_financiacion\nEmpresa Demo,2024-01,10000\nEmpresa Demo,2024-02,15000\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'cashflow_financiacion_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
 
@@ -460,7 +505,7 @@ export function ImportDataManagement({ filterCompanyId }: ImportDataManagementPr
                 </Select>
               </div>
 
-              {(selectedType === 'company_profile' || selectedType === 'balance_operativo' || selectedType === 'balance_financiero') && (
+              {(selectedType === 'company_profile' || selectedType === 'balance_operativo' || selectedType === 'balance_financiero' || selectedType.startsWith('cashflow_')) && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground mb-2">
                     Para importar {getTypeLabel(selectedType).toLowerCase()}, descarga la plantilla:
