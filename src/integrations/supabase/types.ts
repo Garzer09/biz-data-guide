@@ -41,6 +41,27 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_pyg_concepts: {
+        Row: {
+          concepto_codigo: string
+          concepto_nombre: string
+          grupo: string | null
+          obligatorio: boolean
+        }
+        Insert: {
+          concepto_codigo: string
+          concepto_nombre: string
+          grupo?: string | null
+          obligatorio?: boolean
+        }
+        Update: {
+          concepto_codigo?: string
+          concepto_nombre?: string
+          grupo?: string | null
+          obligatorio?: boolean
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           accounting_plan: string | null
@@ -387,6 +408,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pyg_annual: {
+        Row: {
+          anio: string
+          company_id: string
+          concepto_codigo: string
+          creado_en: string
+          id: string
+          valor_total: number | null
+        }
+        Insert: {
+          anio: string
+          company_id: string
+          concepto_codigo: string
+          creado_en?: string
+          id?: string
+          valor_total?: number | null
+        }
+        Update: {
+          anio?: string
+          company_id?: string
+          concepto_codigo?: string
+          creado_en?: string
+          id?: string
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_annual_concepto_codigo_fkey"
+            columns: ["concepto_codigo"]
+            isOneToOne: false
+            referencedRelation: "catalog_pyg_concepts"
+            referencedColumns: ["concepto_codigo"]
+          },
+        ]
       }
       ratios_calc: {
         Row: {
