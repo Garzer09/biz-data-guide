@@ -281,6 +281,70 @@ export type Database = {
           },
         ]
       }
+      company_profiles: {
+        Row: {
+          año_fundacion: number | null
+          company_id: string
+          created_at: string
+          descripcion: string | null
+          empleados: number | null
+          industria: string | null
+          ingresos_anuales: number | null
+          sector: string | null
+          sede: string | null
+          sitio_web: string | null
+          updated_at: string
+        }
+        Insert: {
+          año_fundacion?: number | null
+          company_id: string
+          created_at?: string
+          descripcion?: string | null
+          empleados?: number | null
+          industria?: string | null
+          ingresos_anuales?: number | null
+          sector?: string | null
+          sede?: string | null
+          sitio_web?: string | null
+          updated_at?: string
+        }
+        Update: {
+          año_fundacion?: number | null
+          company_id?: string
+          created_at?: string
+          descripcion?: string | null
+          empleados?: number | null
+          industria?: string | null
+          ingresos_anuales?: number | null
+          sector?: string | null
+          sede?: string | null
+          sitio_web?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       fs_balance: {
         Row: {
           company_id: string
