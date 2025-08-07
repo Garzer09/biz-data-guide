@@ -1396,6 +1396,10 @@ export type Database = {
           company_id: string
         }[]
       }
+      get_apalancamiento: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
       get_balance_financiero: {
         Args: { _company_id: string; _anio: string }
         Returns: {
@@ -1426,6 +1430,10 @@ export type Database = {
           anio: string
         }[]
       }
+      get_capitalizacion: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
       get_cashflow_financiacion: {
         Args: { _company_id: string; _anio: string }
         Returns: {
@@ -1453,6 +1461,10 @@ export type Database = {
           anio: string
         }[]
       }
+      get_cobertura_intereses: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
       get_company_profile: {
         Args: { _company_id: string }
         Returns: {
@@ -1471,6 +1483,24 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_deuda_ebitda: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_ratio_endeudamiento: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_ratio_liquidez_corriente: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_ratios_calculados_years: {
+        Args: { _company_id: string }
+        Returns: {
+          anio: string
+        }[]
+      }
       get_ratios_financieros: {
         Args: { _company_id: string; _anio: string }
         Returns: {
@@ -1484,6 +1514,18 @@ export type Database = {
         Returns: {
           anio: string
         }[]
+      }
+      get_roa: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_roe: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
+      }
+      get_rotacion_activos: {
+        Args: { _company_id: string; _anio: string }
+        Returns: number
       }
       get_wc_balance_years: {
         Args: { _company_id: string }
