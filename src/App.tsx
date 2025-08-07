@@ -14,6 +14,7 @@ import { BreakevenPage } from './pages/BreakevenPage';
 import { NofPage } from './pages/NofPage';
 import DebtPage from './pages/DebtPage';
 import DebtPoolPage from './pages/DebtPoolPage';
+import DebtServicePage from './pages/company/DebtServicePage';
 import { CompanyPage } from './pages/company/CompanyPage';
 import NotFound from './pages/NotFound';
 import './App.css';
@@ -127,6 +128,15 @@ function App() {
             element={
               <AppLayout>
                 <DebtPoolPage />
+              </AppLayout>
+            } 
+          />
+          
+          <Route 
+            path="/c/:companyId/debt-service" 
+            element={
+              <AppLayout>
+                <DebtServicePage />
               </AppLayout>
             } 
           />
