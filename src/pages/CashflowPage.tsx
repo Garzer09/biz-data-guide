@@ -11,7 +11,14 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
-import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge } from "lucide-react";
+import { Download, Plus, DollarSign, Building2, AlertCircle, Gauge, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Info } from "lucide-react";
+
+interface InsightData {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  type: 'positive' | 'negative' | 'warning' | 'info';
+}
 
 interface CashflowData {
   periodo: string;
@@ -333,6 +340,140 @@ export function CashflowPage() {
     if (value < redMax) return 'hsl(var(--destructive))';
     if (value < yellowMax) return 'hsl(45, 93%, 47%)'; // Yellow
     return 'hsl(var(--success))';
+  };
+
+  const getInsightsAutomaticos = (): InsightData[] => {
+    const metrics = getGaugeMetrics();
+    const sums = calculateSums();
+    const insights: InsightData[] = [];
+
+    // FCO Quality insight
+    if (metrics.qualityFco >= 75) {
+      insights.push({
+        icon: CheckCircle,
+        title: "Excelente Calidad del FCO",
+        description: `La calidad del flujo de caja operativo es alta (${metrics.qualityFco}/100), indicando una generación de efectivo consistente y predecible.`,
+        type: 'positive'
+      });
+    } else if (metrics.qualityFco < 50) {
+      insights.push({
+        icon: AlertTriangle,
+        title: "Calidad del FCO Requiere Atención",
+        description: `La calidad del flujo de caja operativo es baja (${metrics.qualityFco}/100), sugiere revisar la gestión del capital de trabajo.`,
+        type: 'negative'
+      });
+    }
+
+    // Autofinanciación insight
+    if (metrics.autofinanciacion >= 2) {
+      insights.push({
+        icon: TrendingUp,
+        title: "Excelente Capacidad de Autofinanciación",
+        description: `La empresa puede financiar ${metrics.autofinanciacion.toFixed(1)}x sus inversiones con flujo operativo, mostrando independencia financiera.`,
+        type: 'positive'
+      });
+    } else if (metrics.autofinanciacion < 1) {
+      insights.push({
+        icon: TrendingDown,
+        title: "Dependencia de Financiación Externa",
+        description: `El FCO solo cubre ${(metrics.autofinanciacion * 100).toFixed(0)}% de las inversiones, requiriendo financiación externa.`,
+        type: 'warning'
+      });
+    }
+
+    // Cobertura de deuda insight
+    if (metrics.coberturaDeuda >= 3) {
+      insights.push({
+        icon: CheckCircle,
+        title: "Sólida Cobertura de Deuda",
+        description: `El FCO cubre ${metrics.coberturaDeuda.toFixed(1)}x el servicio de deuda, proporcionando un margen de seguridad robusto.`,
+        type: 'positive'
+      });
+    } else if (metrics.coberturaDeuda < 1.5) {
+      insights.push({
+        icon: AlertTriangle,
+        title: "Riesgo en Cobertura de Deuda",
+        description: `La cobertura de deuda es ${metrics.coberturaDeuda.toFixed(1)}x, por debajo del mínimo recomendado de 1.5x.`,
+        type: 'negative'
+      });
+    }
+
+    // Flujo neto insight
+    if (sums.neto > 0) {
+      insights.push({
+        icon: TrendingUp,
+        title: "Generación Neta Positiva",
+        description: `El flujo neto positivo de €${sums.neto.toLocaleString()} indica una gestión eficiente del efectivo.`,
+        type: 'positive'
+      });
+    } else {
+      insights.push({
+        icon: Info,
+        title: "Flujo Neto Negativo",
+        description: `El flujo neto de €${sums.neto.toLocaleString()} sugiere revisar la estrategia de inversión y financiación.`,
+        type: 'info'
+      });
+    }
+
+    return insights;
+  };
+
+  const InsightsAutomaticos = ({ insights }: { insights: InsightData[] }) => {
+    const getInsightColor = (type: InsightData['type']) => {
+      switch (type) {
+        case 'positive':
+          return 'text-success';
+        case 'negative':
+          return 'text-destructive';
+        case 'warning':
+          return 'text-yellow-600';
+        case 'info':
+          return 'text-blue-600';
+        default:
+          return 'text-muted-foreground';
+      }
+    };
+
+    const getInsightBgColor = (type: InsightData['type']) => {
+      switch (type) {
+        case 'positive':
+          return 'bg-success/10';
+        case 'negative':
+          return 'bg-destructive/10';
+        case 'warning':
+          return 'bg-yellow-50';
+        case 'info':
+          return 'bg-blue-50';
+        default:
+          return 'bg-muted/10';
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Insights Automáticos</h3>
+          <p className="text-sm text-muted-foreground">Análisis inteligente basado en los datos de flujo de efectivo</p>
+        </div>
+        <div className="grid gap-4">
+          {insights.map((insight, index) => (
+            <Card key={index} className={`${getInsightBgColor(insight.type)} border-l-4`}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`${getInsightColor(insight.type)} mt-1`}>
+                    <insight.icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm mb-1">{insight.title}</h4>
+                    <p className="text-sm text-muted-foreground">{insight.description}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -779,6 +920,9 @@ export function CashflowPage() {
           </>
         )}
       </div>
+
+      {/* Insights Automáticos */}
+      <InsightsAutomaticos insights={getInsightsAutomaticos()} />
 
       {/* Content */}
       <div className="grid gap-6 md:grid-cols-3">
