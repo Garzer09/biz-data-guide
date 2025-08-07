@@ -1677,6 +1677,18 @@ export type Database = {
           status: string
         }[]
       }
+      duplicate_debt_scenario: {
+        Args: {
+          _company_id: string
+          _old_scenario: string
+          _new_scenario: string
+        }
+        Returns: {
+          success: boolean
+          message: string
+          new_debts_count: number
+        }[]
+      }
       get_accessible_companies: {
         Args: { _user_id: string }
         Returns: {
@@ -1787,6 +1799,13 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_debt_scenarios: {
+        Args: { _company_id: string }
+        Returns: {
+          escenario: string
+          num_deudas: number
+        }[]
       }
       get_debt_years: {
         Args: { _company_id: string }
