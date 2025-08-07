@@ -25,15 +25,18 @@ import {
 } from "lucide-react";
 
 interface NofSummary {
+  company_id: string;
+  anio: string;
+  periodo: string;
   nof_total: number;
   dias_ciclo: number;
   clientes: number;
   inventario: number;
-  otros_deudores: number;
+  otros_deudores_op: number;
   anticipos_clientes: number;
   trabajos_en_curso: number;
   proveedores: number;
-  otros_acreedores: number;
+  otros_acreedores_op: number;
 }
 
 interface NofComponent {
@@ -121,14 +124,12 @@ export function NofPage() {
         { data: componentsData },
         { data: ratiosData }
       ] = await Promise.all([
+        // Create summary data from NOF functions
         supabase
-          .from('vw_nof_summary')
-          .select('*')
-          .eq('company_id', companyId)
-          .like('periodo', `${selectedYear}%`)
-          .order('periodo', { ascending: false })
-          .limit(1)
-          .single(),
+          .rpc('get_nof_total', {
+            _company_id: companyId,
+            _anio: selectedYear
+          }),
         supabase
           .rpc('get_nof_components', { 
             _company_id: companyId, 
@@ -141,7 +142,22 @@ export function NofPage() {
           })
       ]);
 
-      setSummary(summaryData);
+      // Create summary object from NOF total function result
+      const nofTotal = summaryData || 0;
+      setSummary({
+        company_id: companyId,
+        anio: selectedYear,
+        periodo: `${selectedYear}-12`,
+        nof_total: nofTotal,
+        clientes: 0,
+        inventario: 0,
+        proveedores: 0,
+        otros_deudores_op: 0,
+        otros_acreedores_op: 0,
+        anticipos_clientes: 0,
+        trabajos_en_curso: 0,
+        dias_ciclo: 0
+      });
       setComponents(componentsData || []);
       setRatios(ratiosData || []);
 

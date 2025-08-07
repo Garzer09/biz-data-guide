@@ -1701,6 +1701,23 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_nof_summary: {
+        Row: {
+          anio: string | null
+          anticipos_clientes: number | null
+          clientes: number | null
+          company_id: string | null
+          dias_ciclo: number | null
+          inventario: number | null
+          nof_total: number | null
+          otros_acreedores_op: number | null
+          otros_deudores_op: number | null
+          periodo: string | null
+          proveedores: number | null
+          trabajos_en_curso: number | null
+        }
+        Relationships: []
+      }
       vw_pyg_analytic_detail: {
         Row: {
           centro_coste: string | null
@@ -1713,6 +1730,49 @@ export type Database = {
           periodo: string | null
           segmento: string | null
           valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_vw"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_access"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "pyg_analytic_concepto_codigo_fkey"
+            columns: ["concepto_codigo"]
+            isOneToOne: false
+            referencedRelation: "catalog_pyg_concepts"
+            referencedColumns: ["concepto_codigo"]
+          },
+        ]
+      }
+      vw_pyg_analytic_segmento: {
+        Row: {
+          anio: string | null
+          company_id: string | null
+          concepto_codigo: string | null
+          concepto_nombre: string | null
+          grupo: string | null
+          num_registros: number | null
+          periodo: string | null
+          segmento: string | null
+          valor_total: number | null
         }
         Relationships: [
           {

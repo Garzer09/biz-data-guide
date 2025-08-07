@@ -11,6 +11,7 @@ interface SegmentData {
   periodo: string;
   concepto_nombre: string;
   grupo: string;
+  valor_total: number;
   total_valor: number;
   company_id: string;
 }
@@ -32,14 +33,38 @@ export function SalesSegmentsPage() {
       setLoading(true);
       
       const { data: segmentData, error } = await supabase
-        .from('vw_pyg_analytic_segmento')
-        .select('*')
+        .from('pyg_analytic')
+        .select(`
+          segmento,
+          periodo,
+          concepto_codigo,
+          valor,
+          catalog_pyg_concepts (
+            concepto_nombre,
+            grupo
+          )
+        `)
         .eq('company_id', companyId)
+        .not('segmento', 'is', null)
         .order('periodo', { ascending: false });
 
       if (error) throw error;
 
-      setData(segmentData || []);
+      // Transform the data to match the expected structure
+      const transformedData = segmentData?.map(item => ({
+        company_id: companyId,
+        periodo: item.periodo,
+        anio: item.periodo.substring(0, 4),
+        segmento: item.segmento,
+        concepto_codigo: item.concepto_codigo,
+        concepto_nombre: item.catalog_pyg_concepts?.concepto_nombre || '',
+        grupo: item.catalog_pyg_concepts?.grupo || '',
+        valor_total: item.valor,
+        total_valor: item.valor,
+        num_registros: 1
+      })) || [];
+
+      setData(transformedData);
 
     } catch (error: any) {
       console.error('Error fetching segment data:', error);
